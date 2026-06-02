@@ -15,8 +15,7 @@ final class CoverCache {
     }
 
     private let maxFullCovers = 50
-    private var fullCoverLRU: [String] = []   // bookIds, MRU at end
-    private let api = ShelfAPIService.shared
+    private var fullCoverLRU: [String] = []
 
     // MARK: - Disk paths
 
@@ -44,28 +43,22 @@ final class CoverCache {
     func thumbnail(bookId: String) async -> Data? {
         let path = thumbPath(bookId: bookId)
         if let cached = try? Data(contentsOf: path) { return cached }
-        guard let url = await api.thumbnailURL(bookId: bookId) else { return nil }
+        guard let url = ShelfAPIService.shared.thumbnailURL(bookId: bookId) else { return nil }
         guard let data = try? await URLSession.shared.data(from: url).0 else { return nil }
         try? data.write(to: path)
         return data
     }
 
-    /// Returns full cover data if online (caches with LRU eviction).
-    /// Falls back to thumbnail if offline or fetch fails.
     func fullCover(bookId: String) async -> Data? {
-        // Check full cache first
         let fullPath = self.fullPath(bookId: bookId)
         if let cached = try? Data(contentsOf: fullPath) {
             touchLRU(bookId: bookId)
             return cached
         }
-        // Try to download
-        guard let url = await api.coverURL(bookId: bookId),
+        guard let url = ShelfAPIService.shared.coverURL(bookId: bookId),
               let data = try? await URLSession.shared.data(from: url).0 else {
-            // Offline fallback — return thumbnail
             return await thumbnail(bookId: bookId)
         }
-        // Evict if at capacity
         evictIfNeeded()
         try? data.write(to: fullPath)
         appendLRU(bookId: bookId)

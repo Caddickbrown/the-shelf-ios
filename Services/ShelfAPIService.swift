@@ -17,7 +17,7 @@ struct ServerConfig: Codable {
 
 /// All network calls to the Shelf Pi server.
 /// Handles self-signed TLS, encodes/decodes JSON, and surfaces errors cleanly.
-actor ShelfAPIService: NSObject {
+final class ShelfAPIService: NSObject {
 
     static let shared = ShelfAPIService()
     private override init() {}
