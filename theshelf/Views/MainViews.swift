@@ -106,8 +106,9 @@ struct LibraryView: View {
                     }
                 }
                 .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(theme.bg)
+                .scrollContentBackground(.hidden)
+                .background(theme.bg)
+            }
             .navigationTitle("Library (\(filtered.count))")
         }
         .shelfBackground()
