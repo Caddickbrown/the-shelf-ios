@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 // MARK: - ServerConfig
 
@@ -33,17 +32,39 @@ actor ShelfAPIService: NSObject {
         self.config = config
     }
 
+    // MARK: - Paged response envelope
+
+    private struct BooksEnvelope: Decodable {
+        let books: [Book]
+        let total: Int?
+        let hasMore: Bool?
+        enum CodingKeys: String, CodingKey {
+            case books, total
+            case hasMore = "has_more"
+        }
+    }
+
     // MARK: - Books
 
-    /// Fetch all books (initial load or full refresh).
+    /// Fetch all books (initial load or full refresh). Paginates until server reports no more.
     func fetchAllBooks() async throws -> [Book] {
-        try await get("/api/books?limit=99999&offset=0")
+        var all: [Book] = []
+        var offset = 0
+        let limit = 500
+        while true {
+            let envelope: BooksEnvelope = try await get("/api/books?limit=\(limit)&offset=\(offset)")
+            all.append(contentsOf: envelope.books)
+            guard envelope.hasMore == true else { break }
+            offset += limit
+        }
+        return all
     }
 
     /// Fetch books updated since a given ISO 8601 timestamp.
     func fetchBooksSince(_ timestamp: String) async throws -> [Book] {
         let encoded = timestamp.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? timestamp
-        return try await get("/api/books?updated_since=\(encoded)")
+        let envelope: BooksEnvelope = try await get("/api/books?updated_since=\(encoded)&limit=500")
+        return envelope.books
     }
 
     /// Apply a batch of mutations to the server.
@@ -151,8 +172,17 @@ actor ShelfAPIService: NSObject {
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
         let req = try makeRequest(path: path, method: "GET")
-        let (data, _) = try await session.data(for: req)
-        return try decoder.decode(T.self, from: data)
+        let (data, response) = try await session.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? "<binary>"
+            throw ShelfError.httpError(http.statusCode, body)
+        }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<unreadable>"
+            throw ShelfError.decodingError("\(type(of: error)): \(error)", preview)
+        }
     }
 
     private func post<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
@@ -187,7 +217,6 @@ actor ShelfAPIService: NSObject {
 
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
-        d.keyDecodingStrategy = .convertFromSnakeCase
         return d
     }()
 
@@ -211,6 +240,25 @@ extension ShelfAPIService: URLSessionDelegate {
             completionHandler(.useCredential, URLCredential(trust: trust))
         } else {
             completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
+
+// MARK: - ShelfError
+
+enum ShelfError: LocalizedError {
+    case httpError(Int, String)
+    case decodingError(String, String)   // swift error description, raw response preview
+    case networkError(String, String)    // error type, message
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let code, let body):
+            return "HTTP \(code):\n\(body.prefix(400))"
+        case .decodingError(let msg, let preview):
+            return "Decode error:\n\(msg)\n\nRaw server response:\n\(preview)"
+        case .networkError(let kind, let msg):
+            return "Network error (\(kind)):\n\(msg)"
         }
     }
 }
