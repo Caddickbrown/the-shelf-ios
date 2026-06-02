@@ -33,17 +33,31 @@ actor ShelfAPIService: NSObject {
         self.config = config
     }
 
+    // MARK: - Paged response envelope
+
+    private struct BooksEnvelope: Decodable {
+        let books: [Book]
+        let total: Int?
+        let hasMore: Bool?
+        enum CodingKeys: String, CodingKey {
+            case books, total
+            case hasMore = "has_more"
+        }
+    }
+
     // MARK: - Books
 
     /// Fetch all books (initial load or full refresh).
     func fetchAllBooks() async throws -> [Book] {
-        try await get("/api/books?limit=99999&offset=0")
+        let envelope: BooksEnvelope = try await get("/api/books?limit=99999&offset=0")
+        return envelope.books
     }
 
     /// Fetch books updated since a given ISO 8601 timestamp.
     func fetchBooksSince(_ timestamp: String) async throws -> [Book] {
         let encoded = timestamp.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? timestamp
-        return try await get("/api/books?updated_since=\(encoded)")
+        let envelope: BooksEnvelope = try await get("/api/books?updated_since=\(encoded)&limit=99999")
+        return envelope.books
     }
 
     /// Apply a batch of mutations to the server.
