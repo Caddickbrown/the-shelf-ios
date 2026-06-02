@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		47B8C3E22FCF574E00E4C4E9 /* theshelf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = theshelf.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		47B8C3E22FCF574E00E4C4E9 /* Shelf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shelf.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		47B8C3E32FCF574E00E4C4E9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				47B8C3E22FCF574E00E4C4E9 /* theshelf.app */,
+				47B8C3E22FCF574E00E4C4E9 /* Shelf.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		47B8C3E12FCF574E00E4C4E9 /* theshelf */ = {
+		47B8C3E12FCF574E00E4C4E9 /* Shelf */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 47B8C3EF2FCF575000E4C4E9 /* Build configuration list for PBXNativeTarget "theshelf" */;
+			buildConfigurationList = 47B8C3EF2FCF575000E4C4E9 /* Build configuration list for PBXNativeTarget "Shelf" */;
 			buildPhases = (
 				47B8C3DE2FCF574E00E4C4E9 /* Sources */,
 				47B8C3DF2FCF574E00E4C4E9 /* Frameworks */,
@@ -63,11 +63,11 @@
 			fileSystemSynchronizedGroups = (
 				47B8C3E42FCF574E00E4C4E9 /* theshelf */,
 			);
-			name = theshelf;
+			name = Shelf;
 			packageProductDependencies = (
 			);
 			productName = theshelf;
-			productReference = 47B8C3E22FCF574E00E4C4E9 /* theshelf.app */;
+			productReference = 47B8C3E22FCF574E00E4C4E9 /* Shelf.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "theshelf" */;
+			buildConfigurationList = 47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "Shelf" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				47B8C3E12FCF574E00E4C4E9 /* theshelf */,
+				47B8C3E12FCF574E00E4C4E9 /* Shelf */,
 			);
 		};
 /* End PBXProject section */
@@ -266,7 +266,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = caddickbrown.theshelf;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caddickbrown.shelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -298,7 +298,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = caddickbrown.theshelf;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caddickbrown.shelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -313,7 +313,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "theshelf" */ = {
+		47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "Shelf" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				47B8C3ED2FCF575000E4C4E9 /* Debug */,
@@ -322,7 +322,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		47B8C3EF2FCF575000E4C4E9 /* Build configuration list for PBXNativeTarget "theshelf" */ = {
+		47B8C3EF2FCF575000E4C4E9 /* Build configuration list for PBXNativeTarget "Shelf" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				47B8C3F02FCF575000E4C4E9 /* Debug */,
