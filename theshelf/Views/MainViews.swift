@@ -242,18 +242,36 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal)
 
-                if let error { Text(error).foregroundStyle(.red).font(.caption) }
+                if let error {
+                    ScrollView {
+                        Text(error)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                            .monospaced()
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 200)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal)
+                }
 
                 Button {
                     Task {
                         testing = true
                         error = nil
-                        // Quick connectivity test
+                        ShelfAPIService.shared.configure(ServerConfig(
+                            baseURL: serverURL.trimmingCharacters(in: .whitespaces),
+                            ignoreTLSErrors: true
+                        ))
                         do {
                             _ = try await ShelfAPIService.shared.fetchBooksSince("2099-01-01T00:00:00Z")
                             onComplete()
+                        } catch let e as ShelfError {
+                            self.error = e.errorDescription ?? "Unknown error"
                         } catch {
-                            self.error = "Couldn't connect: \(error.localizedDescription)"
+                            self.error = "\(type(of: error)): \(error.localizedDescription)"
                         }
                         testing = false
                     }
