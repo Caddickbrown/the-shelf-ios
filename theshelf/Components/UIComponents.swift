@@ -279,22 +279,24 @@ struct FilterChip: View {
     @Environment(ShelfTheme.self) var theme
     let label: String
     let isSelected: Bool
-    var activeColor: Color = theme.bg
-    var activeBg: Color = theme.accent
+    var activeColor: Color? = nil   // nil = use theme.bg
+    var activeBg: Color? = nil      // nil = use theme.accent
     let action: () -> Void
 
     var body: some View {
+        let fgColor = activeColor ?? theme.bg
+        let bgColor = activeBg ?? theme.accent
         Button(action: action) {
             Text(label)
                 .font(.caption.bold())
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isSelected ? activeBg : theme.surface2)
-                .foregroundStyle(isSelected ? activeColor : theme.muted)
+                .background(isSelected ? bgColor : theme.surface2)
+                .foregroundStyle(isSelected ? fgColor : theme.muted)
                 .clipShape(Capsule())
                 .overlay(
                     Capsule().strokeBorder(
-                        isSelected ? activeBg : theme.border,
+                        isSelected ? bgColor : theme.border,
                         lineWidth: 1
                     )
                 )

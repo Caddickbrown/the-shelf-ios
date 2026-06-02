@@ -308,7 +308,6 @@ actor ShelfAPIService: NSObject {
     }()
 
     private struct EmptyResponse: Codable {}
-}
 
     // MARK: - Stats
 
@@ -319,6 +318,7 @@ actor ShelfAPIService: NSObject {
     func fetchStatsExtended() async throws -> StatsExtendedResponse {
         try await get("/api/stats/extended")
     }
+}
 
 // MARK: - TLS delegate (accept self-signed Pi cert)
 
