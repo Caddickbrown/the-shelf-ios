@@ -69,6 +69,36 @@ struct Book: Identifiable, Codable, Hashable {
     var hasCover: Bool {
         olCoverId != nil || coverUrl != nil
     }
+
+    nonisolated init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        author = try c.decode(String.self, forKey: .author)
+        status = try c.decode(ReadStatus.self, forKey: .status)
+        rating = try c.decodeIfPresent(Int.self, forKey: .rating)
+        genre = try c.decodeIfPresent(String.self, forKey: .genre)
+        type = try c.decode(BookType.self, forKey: .type)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        isbn = try c.decodeIfPresent(String.self, forKey: .isbn)
+        isbn13 = try c.decodeIfPresent(String.self, forKey: .isbn13)
+        seriesPos = try c.decodeIfPresent(String.self, forKey: .seriesPos)
+        review = try c.decodeIfPresent(String.self, forKey: .review)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        olCoverId = try c.decodeIfPresent(String.self, forKey: .olCoverId)
+        coverUrl = try c.decodeIfPresent(String.self, forKey: .coverUrl)
+        series = try c.decodeIfPresent(String.self, forKey: .series)
+        yearRead = try c.decodeIfPresent(Int.self, forKey: .yearRead)
+        startDate = try c.decodeIfPresent(String.self, forKey: .startDate)
+        endDate = try c.decodeIfPresent(String.self, forKey: .endDate)
+        currentPage = try c.decodeIfPresent(Int.self, forKey: .currentPage)
+        pageCount = try c.decodeIfPresent(Int.self, forKey: .pageCount)
+        seriesPosition = try c.decodeIfPresent(Double.self, forKey: .seriesPosition)
+        publisher = try c.decodeIfPresent(String.self, forKey: .publisher)
+        publishedDate = try c.decodeIfPresent(String.self, forKey: .publishedDate)
+        language = try c.decodeIfPresent(String.self, forKey: .language)
+        updatedAt = try c.decode(String.self, forKey: .updatedAt)
+    }
 }
 
 // MARK: - ReadStatus
@@ -78,6 +108,14 @@ enum ReadStatus: String, Codable, CaseIterable {
     case reading = "reading"
     case read = "read"
     case dnf = "dnf"
+
+    nonisolated init(from decoder: any Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        guard let value = ReadStatus(rawValue: raw) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid ReadStatus: \(raw)"))
+        }
+        self = value
+    }
 
     var label: String {
         switch self {
@@ -109,7 +147,7 @@ enum BookType: String, Codable, CaseIterable {
 
     var label: String { rawValue.capitalized }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: any Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
         self = BookType(rawValue: raw) ?? .book
     }
