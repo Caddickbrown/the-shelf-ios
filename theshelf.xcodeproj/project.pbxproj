@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "Shelf" */;
+			buildConfigurationList = 47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "theshelf" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -313,7 +313,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "Shelf" */ = {
+		47B8C3DD2FCF574E00E4C4E9 /* Build configuration list for PBXProject "theshelf" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				47B8C3ED2FCF575000E4C4E9 /* Debug */,
