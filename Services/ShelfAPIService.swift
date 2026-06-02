@@ -165,8 +165,19 @@ actor ShelfAPIService: NSObject {
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
         let req = try makeRequest(path: path, method: "GET")
-        let (data, _) = try await session.data(for: req)
-        return try decoder.decode(T.self, from: data)
+        let (data, response) = try await session.data(for: req)
+        // Surface HTTP errors
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? "<binary>"
+            throw ShelfError.httpError(http.statusCode, body)
+        }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            // Include raw JSON snippet in error so we can diagnose field mismatches
+            let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<unreadable>"
+            throw ShelfError.decodingError(error.localizedDescription, preview)
+        }
     }
 
     private func post<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
@@ -225,6 +236,22 @@ extension ShelfAPIService: URLSessionDelegate {
             completionHandler(.useCredential, URLCredential(trust: trust))
         } else {
             completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
+
+// MARK: - ShelfError
+
+enum ShelfError: LocalizedError {
+    case httpError(Int, String)
+    case decodingError(String, String)  // message, raw JSON preview
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let code, let body):
+            return "HTTP \(code): \(body.prefix(200))"
+        case .decodingError(let msg, let preview):
+            return "Decode failed: \(msg)\n\nRaw response:\n\(preview)"
         }
     }
 }

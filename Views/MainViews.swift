@@ -242,7 +242,20 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal)
 
-                if let error { Text(error).foregroundStyle(.red).font(.caption) }
+                if let error { 
+                    ScrollView {
+                        Text(error)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                            .monospaced()
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 160)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal)
+                }
 
                 Button {
                     Task {
