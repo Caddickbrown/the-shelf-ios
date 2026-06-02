@@ -68,6 +68,7 @@ struct HomeView: View {
 // MARK: - Library View (filterable by status/type)
 
 struct LibraryView: View {
+    @Environment(ShelfTheme.self) var theme
     @Environment(BookStore.self) var store
     @State private var selectedStatus: ReadStatus? = nil
     @State private var selectedType: BookType? = nil
@@ -106,7 +107,7 @@ struct LibraryView: View {
                 }
                 .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(ShelfTheme.bg)
+            .background(theme.bg)
             .navigationTitle("Library (\(filtered.count))")
         }
         .shelfBackground()
@@ -116,6 +117,7 @@ struct LibraryView: View {
 // MARK: - Search View
 
 struct SearchView: View {
+    @Environment(ShelfTheme.self) var theme
     @Environment(BookStore.self) var store
     @State private var query = ""
 
@@ -130,7 +132,7 @@ struct SearchView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(ShelfTheme.bg)
+            .background(theme.bg)
             .navigationTitle("Search")
             .searchable(text: $query, prompt: "Title, author, ISBN…")
             .overlay {
@@ -241,6 +243,9 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
+                    NavigationLink("Theme") {
+                        ThemePickerView()
+                    }
                     LabeledContent("Version", value: "1.0.0")
                     Link("View on GitHub", destination: URL(string: "https://github.com/Caddickbrown/the-shelf-ios")!)
                 }

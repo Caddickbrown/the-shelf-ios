@@ -4,6 +4,7 @@ import SwiftUI
 // Shows thumbnail by default; loads full cover when loadFull=true (detail page).
 
 struct CoverView: View {
+    @Environment(ShelfTheme.self) var theme
     let bookId: String
     var loadFull: Bool = false
     @Environment(CoverCache.self) var cache
@@ -17,10 +18,10 @@ struct CoverView: View {
                     .scaledToFill()
             } else {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(ShelfTheme.surface2)
+                    .fill(theme.surface2)
                     .overlay(
                         Image(systemName: "book.closed")
-                            .foregroundStyle(ShelfTheme.muted)
+                            .foregroundStyle(theme.muted)
                     )
             }
         }
@@ -35,6 +36,7 @@ struct CoverView: View {
 // MARK: - BookRow
 
 struct BookRow: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     var body: some View {
         HStack(spacing: 12) {
@@ -45,16 +47,16 @@ struct BookRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(book.title)
                     .font(.body)
-                    .foregroundStyle(ShelfTheme.text)
+                    .foregroundStyle(theme.text)
                     .lineLimit(2)
                 Text(book.author)
                     .font(.caption)
-                    .foregroundStyle(ShelfTheme.muted)
+                    .foregroundStyle(theme.muted)
                     .lineLimit(1)
                 if let rating = book.rating {
                     Text(String(repeating: "★", count: rating))
                         .font(.caption2)
-                        .foregroundStyle(ShelfTheme.accent)
+                        .foregroundStyle(theme.accent)
                 }
             }
             Spacer()
@@ -67,6 +69,7 @@ struct BookRow: View {
 // MARK: - ReadingCard (horizontal scroll card)
 
 struct ReadingCard: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -77,17 +80,17 @@ struct ReadingCard: View {
 
             Text(book.title)
                 .font(.caption.bold())
-                .foregroundStyle(ShelfTheme.text)
+                .foregroundStyle(theme.text)
                 .lineLimit(2)
                 .frame(width: 100, alignment: .leading)
 
             if let progress = book.progress {
                 ProgressView(value: progress)
                     .frame(width: 100)
-                    .tint(ShelfTheme.accent)
+                    .tint(theme.accent)
                 Text("\(Int(progress * 100))%")
                     .font(.caption2)
-                    .foregroundStyle(ShelfTheme.muted)
+                    .foregroundStyle(theme.muted)
             }
         }
     }
@@ -96,14 +99,15 @@ struct ReadingCard: View {
 // MARK: - StatusBadge
 
 struct StatusBadge: View {
+    @Environment(ShelfTheme.self) var theme
     let status: ReadStatus
     var body: some View {
         Text(status.label)
             .font(.caption2.bold())
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(ShelfTheme.statusBg(status))
-            .foregroundStyle(ShelfTheme.statusFg(status))
+            .background(theme.statusBg(status))
+            .foregroundStyle(theme.statusFg(status))
             .clipShape(Capsule())
     }
 }
@@ -111,6 +115,7 @@ struct StatusBadge: View {
 // MARK: - QuickActionButton
 
 struct QuickActionButton: View {
+    @Environment(ShelfTheme.self) var theme
     let label: String
     let icon: String
     let action: () -> Void
@@ -122,12 +127,12 @@ struct QuickActionButton: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(ShelfTheme.surface2)
-            .foregroundStyle(ShelfTheme.text)
+            .background(theme.surface2)
+            .foregroundStyle(theme.text)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(ShelfTheme.border, lineWidth: 1)
+                    .strokeBorder(theme.border, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -137,6 +142,7 @@ struct QuickActionButton: View {
 // MARK: - SyncButton
 
 struct SyncButton: View {
+    @Environment(ShelfTheme.self) var theme
     @Environment(SyncEngine.self) var sync
     @Environment(BookStore.self) var store
     var body: some View {
@@ -144,12 +150,12 @@ struct SyncButton: View {
             Task { await sync.sync(store: store) }
         } label: {
             if sync.isSyncing {
-                ProgressView().scaleEffect(0.8).tint(ShelfTheme.accent)
+                ProgressView().scaleEffect(0.8).tint(theme.accent)
             } else {
                 Image(systemName: sync.pendingCount > 0
                       ? "arrow.triangle.2.circlepath.circle.fill"
                       : "arrow.triangle.2.circlepath")
-                    .foregroundStyle(sync.pendingCount > 0 ? ShelfTheme.orange : ShelfTheme.muted)
+                    .foregroundStyle(sync.pendingCount > 0 ? theme.orange : theme.muted)
             }
         }
         .disabled(sync.isSyncing)
@@ -159,17 +165,18 @@ struct SyncButton: View {
 // MARK: - SyncStatusBanner
 
 struct SyncStatusBanner: View {
+    @Environment(ShelfTheme.self) var theme
     @Environment(SyncEngine.self) var sync
     var body: some View {
         HStack(spacing: 8) {
-            ProgressView().scaleEffect(0.7).tint(ShelfTheme.accent)
-            Text("Syncing…").font(.caption).foregroundStyle(ShelfTheme.muted)
+            ProgressView().scaleEffect(0.7).tint(theme.accent)
+            Text("Syncing…").font(.caption).foregroundStyle(theme.muted)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(ShelfTheme.surface2)
+        .background(theme.surface2)
         .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(ShelfTheme.border, lineWidth: 1))
+        .overlay(Capsule().strokeBorder(theme.border, lineWidth: 1))
         .padding(.top, 8)
     }
 }
@@ -177,16 +184,17 @@ struct SyncStatusBanner: View {
 // MARK: - SectionHeader
 
 struct SectionHeader: View {
+    @Environment(ShelfTheme.self) var theme
     let title: String
     var count: Int? = nil
     var body: some View {
         HStack {
             Text(title)
                 .font(.headline)
-                .foregroundStyle(ShelfTheme.text)
+                .foregroundStyle(theme.text)
             if let n = count {
                 Text("(\(n))")
-                    .foregroundStyle(ShelfTheme.muted)
+                    .foregroundStyle(theme.muted)
                     .font(.subheadline)
             }
             Spacer()
@@ -198,12 +206,13 @@ struct SectionHeader: View {
 // MARK: - LabelValue
 
 struct LabelValue: View {
+    @Environment(ShelfTheme.self) var theme
     let label: String
     let value: String
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption).foregroundStyle(ShelfTheme.muted)
-            Text(value).font(.subheadline).foregroundStyle(ShelfTheme.text)
+            Text(label).font(.caption).foregroundStyle(theme.muted)
+            Text(value).font(.subheadline).foregroundStyle(theme.text)
         }
     }
 }
@@ -227,6 +236,7 @@ struct MetadataGrid: View {
 // MARK: - FilterBar
 
 struct FilterBar: View {
+    @Environment(ShelfTheme.self) var theme
     @Binding var selectedStatus: ReadStatus?
     @Binding var selectedType: BookType?
     @Binding var sortBy: LibraryView.SortOption
@@ -241,15 +251,15 @@ struct FilterBar: View {
                     FilterChip(
                         label: s.label,
                         isSelected: selectedStatus == s,
-                        activeColor: ShelfTheme.statusFg(s),
-                        activeBg: ShelfTheme.statusBg(s)
+                        activeColor: theme.statusFg(s),
+                        activeBg: theme.statusBg(s)
                     ) {
                         selectedStatus = selectedStatus == s ? nil : s
                     }
                 }
                 Divider()
                     .frame(height: 20)
-                    .overlay(ShelfTheme.border)
+                    .overlay(theme.border)
                 Menu {
                     ForEach(LibraryView.SortOption.allCases, id: \.self) { opt in
                         Button(opt.rawValue) { sortBy = opt }
@@ -261,15 +271,16 @@ struct FilterBar: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .background(ShelfTheme.bg)
+        .background(theme.bg)
     }
 }
 
 struct FilterChip: View {
+    @Environment(ShelfTheme.self) var theme
     let label: String
     let isSelected: Bool
-    var activeColor: Color = ShelfTheme.bg
-    var activeBg: Color = ShelfTheme.accent
+    var activeColor: Color = theme.bg
+    var activeBg: Color = theme.accent
     let action: () -> Void
 
     var body: some View {
@@ -278,12 +289,12 @@ struct FilterChip: View {
                 .font(.caption.bold())
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isSelected ? activeBg : ShelfTheme.surface2)
-                .foregroundStyle(isSelected ? activeColor : ShelfTheme.muted)
+                .background(isSelected ? activeBg : theme.surface2)
+                .foregroundStyle(isSelected ? activeColor : theme.muted)
                 .clipShape(Capsule())
                 .overlay(
                     Capsule().strokeBorder(
-                        isSelected ? activeBg : ShelfTheme.border,
+                        isSelected ? activeBg : theme.border,
                         lineWidth: 1
                     )
                 )
@@ -295,29 +306,31 @@ struct FilterChip: View {
 // MARK: - QuickStatsRow
 
 struct QuickStatsRow: View {
+    @Environment(ShelfTheme.self) var theme
     let store: BookStore
     var body: some View {
         HStack(spacing: 0) {
-            StatCell(value: "\(store.books(status: .read).count)",    label: "Read",    color: ShelfTheme.green)
-            Divider().frame(height: 40).overlay(ShelfTheme.border)
-            StatCell(value: "\(store.books(status: .reading).count)", label: "Reading", color: ShelfTheme.blue)
-            Divider().frame(height: 40).overlay(ShelfTheme.border)
-            StatCell(value: "\(store.books(status: .toRead).count)",  label: "To Read", color: ShelfTheme.orange)
-            Divider().frame(height: 40).overlay(ShelfTheme.border)
-            StatCell(value: "\(store.books.count)",                   label: "Total",   color: ShelfTheme.text)
+            StatCell(value: "\(store.books(status: .read).count)",    label: "Read",    color: theme.green)
+            Divider().frame(height: 40).overlay(theme.border)
+            StatCell(value: "\(store.books(status: .reading).count)", label: "Reading", color: theme.blue)
+            Divider().frame(height: 40).overlay(theme.border)
+            StatCell(value: "\(store.books(status: .toRead).count)",  label: "To Read", color: theme.orange)
+            Divider().frame(height: 40).overlay(theme.border)
+            StatCell(value: "\(store.books.count)",                   label: "Total",   color: theme.text)
         }
         .shelfCard()
     }
 }
 
 struct StatCell: View {
+    @Environment(ShelfTheme.self) var theme
     let value: String
     let label: String
-    var color: Color = ShelfTheme.text
+    var color: Color = theme.text
     var body: some View {
         VStack(spacing: 2) {
             Text(value).font(.title3.bold()).foregroundStyle(color)
-            Text(label).font(.caption2).foregroundStyle(ShelfTheme.muted)
+            Text(label).font(.caption2).foregroundStyle(theme.muted)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -327,6 +340,7 @@ struct StatCell: View {
 // MARK: - StatusPickerSheet
 
 struct StatusPickerSheet: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     @Environment(BookStore.self) var store
     @Environment(\.dismiss) var dismiss
@@ -348,14 +362,14 @@ struct StatusPickerSheet: View {
                     ForEach(ReadStatus.allCases, id: \.self) { s in
                         HStack {
                             Circle()
-                                .fill(ShelfTheme.statusFg(s))
+                                .fill(theme.statusFg(s))
                                 .frame(width: 8, height: 8)
                             Text(s.emoji + " " + s.label)
-                                .foregroundStyle(ShelfTheme.text)
+                                .foregroundStyle(theme.text)
                             Spacer()
                             if status == s {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(ShelfTheme.accent)
+                                    .foregroundStyle(theme.accent)
                             }
                         }
                         .contentShape(Rectangle())
@@ -378,7 +392,7 @@ struct StatusPickerSheet: View {
                                            endDate: endDate.isEmpty ? nil : endDate)
                         dismiss()
                     }
-                    .foregroundStyle(ShelfTheme.accent)
+                    .foregroundStyle(theme.accent)
                 }
             }
         }
@@ -389,6 +403,7 @@ struct StatusPickerSheet: View {
 // MARK: - RatingPickerSheet
 
 struct RatingPickerSheet: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     @Environment(BookStore.self) var store
     @Environment(\.dismiss) var dismiss
@@ -401,18 +416,18 @@ struct RatingPickerSheet: View {
             VStack(spacing: 32) {
                 Text("Rate this book")
                     .font(.headline)
-                    .foregroundStyle(ShelfTheme.text)
+                    .foregroundStyle(theme.text)
                 HStack(spacing: 16) {
                     ForEach(1...5, id: \.self) { n in
                         Image(systemName: n <= (rating ?? 0) ? "star.fill" : "star")
                             .font(.largeTitle)
-                            .foregroundStyle(ShelfTheme.accent)
+                            .foregroundStyle(theme.accent)
                             .onTapGesture { rating = rating == n ? nil : n }
                     }
                 }
                 Button("Clear rating", role: .destructive) { rating = nil }
                     .font(.callout)
-                    .foregroundStyle(ShelfTheme.red)
+                    .foregroundStyle(theme.red)
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
@@ -420,7 +435,7 @@ struct RatingPickerSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { store.updateRating(book.id, rating: rating); dismiss() }
-                        .foregroundStyle(ShelfTheme.accent)
+                        .foregroundStyle(theme.accent)
                 }
             }
         }
@@ -431,6 +446,7 @@ struct RatingPickerSheet: View {
 // MARK: - ProgressEditorSheet
 
 struct ProgressEditorSheet: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     @Environment(BookStore.self) var store
     @Environment(\.dismiss) var dismiss
@@ -451,10 +467,10 @@ struct ProgressEditorSheet: View {
                 if let total = book.pageCount, let n = Int(currentPage) {
                     Section {
                         ProgressView(value: Double(n) / Double(total))
-                            .tint(ShelfTheme.accent)
+                            .tint(theme.accent)
                         Text("\(n) of \(total) pages · \(Int(Double(n)/Double(total)*100))%")
                             .font(.caption)
-                            .foregroundStyle(ShelfTheme.muted)
+                            .foregroundStyle(theme.muted)
                     }
                 }
             }
@@ -467,7 +483,7 @@ struct ProgressEditorSheet: View {
                         store.updateProgress(book.id, currentPage: Int(currentPage))
                         dismiss()
                     }
-                    .foregroundStyle(ShelfTheme.accent)
+                    .foregroundStyle(theme.accent)
                 }
             }
         }
@@ -478,6 +494,7 @@ struct ProgressEditorSheet: View {
 // MARK: - ISBNSearchView
 
 struct ISBNSearchView: View {
+    @Environment(ShelfTheme.self) var theme
     @Binding var query: String
     @Binding var results: [MetadataResult]
     @Binding var isSearching: Bool
@@ -503,37 +520,37 @@ struct ISBNSearchView: View {
                         isSearching = false
                     }
                 }
-                .foregroundStyle(ShelfTheme.accent)
+                .foregroundStyle(theme.accent)
                 .disabled(query.isEmpty || isSearching)
             }
             .padding()
 
             if let error {
                 Text(error)
-                    .foregroundStyle(ShelfTheme.red)
+                    .foregroundStyle(theme.red)
                     .font(.caption)
                     .padding(.horizontal)
             }
-            if isSearching { ProgressView("Searching…").tint(ShelfTheme.accent).padding() }
+            if isSearching { ProgressView("Searching…").tint(theme.accent).padding() }
 
             List(results) { result in
                 Button {
                     onSelect(result)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(result.title).font(.body.bold()).foregroundStyle(ShelfTheme.text)
-                        Text(result.author).foregroundStyle(ShelfTheme.muted).font(.caption)
+                        Text(result.title).font(.body.bold()).foregroundStyle(theme.text)
+                        Text(result.author).foregroundStyle(theme.muted).font(.caption)
                         if let isbn = result.isbn13 ?? result.isbn {
-                            Text(isbn).foregroundStyle(ShelfTheme.muted.opacity(0.6)).font(.caption2)
+                            Text(isbn).foregroundStyle(theme.muted.opacity(0.6)).font(.caption2)
                         }
                     }
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(ShelfTheme.surface)
+                .listRowBackground(theme.surface)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(ShelfTheme.bg)
+            .background(theme.bg)
         }
     }
 }
@@ -541,6 +558,7 @@ struct ISBNSearchView: View {
 // MARK: - ManualAddForm
 
 struct ManualAddForm: View {
+    @Environment(ShelfTheme.self) var theme
     let onAdd: (Book) -> Void
     @State private var title = ""
     @State private var author = ""
@@ -597,11 +615,11 @@ struct ManualAddForm: View {
                     )
                     onAdd(book)
                 }
-                .foregroundStyle(ShelfTheme.accent)
+                .foregroundStyle(theme.accent)
                 .disabled(title.isEmpty || author.isEmpty)
             }
         }
         .scrollContentBackground(.hidden)
-        .background(ShelfTheme.bg)
+        .background(theme.bg)
     }
 }

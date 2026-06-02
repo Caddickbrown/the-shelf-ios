@@ -7,6 +7,7 @@ struct TheShelfApp: App {
     @State private var store = BookStore.shared
     @State private var syncEngine = SyncEngine.shared
     @State private var coverCache = CoverCache.shared
+    @State private var shelfTheme = ShelfTheme.shared
     @AppStorage("shelf.serverURL") private var serverURL = "https://192.168.4.185:8773"
     @AppStorage("shelf.fallbackURL") private var fallbackURL = ""
     @AppStorage("shelf.hasLaunched") private var hasLaunched = false
@@ -28,7 +29,7 @@ struct TheShelfApp: App {
                 } else {
                     ContentView()
                         .onAppear {
-                            // Restore saved config on every launch
+                            shelfTheme.load()
                             ShelfAPIService.shared.configure(ServerConfig(
                                 baseURL: serverURL,
                                 ignoreTLSErrors: true,
@@ -40,7 +41,9 @@ struct TheShelfApp: App {
             .environment(store)
             .environment(syncEngine)
             .environment(coverCache)
-            .tint(ShelfTheme.accent)
+            .environment(shelfTheme)
+            .tint(shelfTheme.accent)
+            .preferredColorScheme(shelfTheme.colorScheme)
         }
         // Sync on foreground — using scenePhase avoids re-triggering on every
         // @Observable state change (which caused the request flood).

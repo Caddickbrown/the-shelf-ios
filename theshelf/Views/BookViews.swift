@@ -4,6 +4,7 @@ import SwiftUI
 // Full parity: status, dates, rating, review, progress, metadata editing, cover upload.
 
 struct BookDetailView: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     @Environment(BookStore.self) var store
     @Environment(SyncEngine.self) var sync
@@ -27,9 +28,9 @@ struct BookDetailView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(current.title).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
-                        Text(current.author).foregroundStyle(.secondary)
+                        Text(current.author).foregroundStyle(theme.muted)
                         if let series = current.series {
-                            Text(series).font(.caption).foregroundStyle(Color.accentColor)
+                            Text(series).font(.caption).foregroundStyle(theme.accent)
                         }
                         StatusBadge(status: current.status)
                     }
@@ -61,10 +62,10 @@ struct BookDetailView: View {
                 if current.status == .reading, let progress = current.progress {
                     VStack(alignment: .leading, spacing: 4) {
                         ProgressView(value: progress)
-                            .tint(Color.accentColor)
+                            .tint(theme.accent)
                         Text("\(current.currentPage ?? 0) of \(current.pageCount ?? 0) pages · \(Int(progress * 100))%")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.muted)
                     }
                     .padding(.horizontal)
                 }
@@ -86,7 +87,7 @@ struct BookDetailView: View {
                 if let review = current.review, !review.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("My Review").font(.headline)
-                        Text(review).foregroundStyle(.secondary)
+                        Text(review).foregroundStyle(theme.muted)
                     }
                     .padding(.horizontal)
                 }
@@ -95,7 +96,7 @@ struct BookDetailView: View {
                 if let desc = current.description, !desc.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Description").font(.headline)
-                        Text(desc).foregroundStyle(.secondary).font(.callout)
+                        Text(desc).foregroundStyle(theme.muted).font(.callout)
                     }
                     .padding(.horizontal)
                 }
@@ -133,6 +134,7 @@ struct BookDetailView: View {
 // MARK: - Book Edit View (full field editing)
 
 struct BookEditView: View {
+    @Environment(ShelfTheme.self) var theme
     let book: Book
     @Environment(BookStore.self) var store
     @Environment(\.dismiss) var dismiss
@@ -212,7 +214,7 @@ struct BookEditView: View {
                     }
                     ZStack(alignment: .topLeading) {
                         if review.isEmpty {
-                            Text("Write a review…").foregroundStyle(.tertiary).padding(.top, 8)
+                            Text("Write a review…").foregroundStyle(theme.muted.opacity(0.6)).padding(.top, 8)
                         }
                         TextEditor(text: $review)
                             .frame(minHeight: 80)
@@ -233,7 +235,7 @@ struct BookEditView: View {
                 Section("Notes") {
                     ZStack(alignment: .topLeading) {
                         if notes.isEmpty {
-                            Text("Private notes…").foregroundStyle(.tertiary).padding(.top, 8)
+                            Text("Private notes…").foregroundStyle(theme.muted.opacity(0.6)).padding(.top, 8)
                         }
                         TextEditor(text: $notes)
                             .frame(minHeight: 60)
