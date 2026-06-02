@@ -22,7 +22,7 @@ actor ShelfAPIService: NSObject {
     static let shared = ShelfAPIService()
     private override init() {}
 
-    private var config: ServerConfig = .default
+    private var config = ServerConfig(baseURL: "https://192.168.4.185:8773", ignoreTLSErrors: true)
     private lazy var session: URLSession = {
         let cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest = 15
