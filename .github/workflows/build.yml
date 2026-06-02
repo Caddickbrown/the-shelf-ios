@@ -23,7 +23,7 @@ jobs:
       - name: Build
         run: |
           xcodebuild build \
-            -project Shelf.xcodeproj \
+            -project theshelf.xcodeproj \
             -scheme Shelf \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO
