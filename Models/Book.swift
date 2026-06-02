@@ -52,11 +52,20 @@ struct Book: Identifiable, Codable, Hashable {
         yearRead    = try c.decodeIfPresent(Int.self, forKey: .yearRead)
         updatedAt   = (try? c.decodeIfPresent(String.self, forKey: .updatedAt)) ?? "1970-01-01T00:00:00"
 
-        // series/series_pos: treat "-" or empty string as nil
+        // series/series_pos: can be String, Float, Int, or null — normalise to String or nil
         let rawSeries = try c.decodeIfPresent(String.self, forKey: .series)
         series = (rawSeries == nil || rawSeries == "-" || rawSeries == "") ? nil : rawSeries
-        let rawPos = try c.decodeIfPresent(String.self, forKey: .seriesPos)
-        seriesPos = (rawPos == nil || rawPos == "-" || rawPos == "") ? nil : rawPos
+
+        // series_pos is mixed type on server (float/string/null) — try each in turn
+        if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos), let s, s != "-", !s.isEmpty {
+            seriesPos = s
+        } else if let f = try? c.decodeIfPresent(Double.self, forKey: .seriesPos), let f {
+            seriesPos = f.truncatingRemainder(dividingBy: 1) == 0
+                ? String(Int(f))
+                : String(f)
+        } else {
+            seriesPos = nil
+        }
 
         // status: fall back to .toRead for unknown values
         let rawStatus = (try? c.decodeIfPresent(String.self, forKey: .status)) ?? "to-read"
