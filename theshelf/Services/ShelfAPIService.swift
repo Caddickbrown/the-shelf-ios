@@ -92,6 +92,71 @@ actor ShelfAPIService: NSObject {
         try await delete("/api/books/\(id)")
     }
 
+    // MARK: - Manga
+
+    /// Fetch all manga from /api/manga. Items are mapped to the shared Book model.
+    func fetchManga() async throws -> [Book] {
+        struct MangaEnvelope: Decodable {
+            let manga: [MangaItem]
+        }
+        struct MangaItem: Decodable {
+            let id: String
+            let title: String
+            let author: String
+            let status: ReadStatus
+            let notes: String?
+            let series: String?
+            let seriesPos: Double?   // volume number (series_pos in JSON)
+            let olCoverId: String?
+            let readingOrder: Int?
+
+            enum CodingKeys: String, CodingKey {
+                case id, title, author, status, notes, series
+                case seriesPos    = "series_pos"
+                case olCoverId    = "ol_cover_id"
+                case readingOrder = "reading_order"
+            }
+        }
+
+        let envelope: MangaEnvelope = try await get("/api/manga")
+        let now = ISO8601DateFormatter().string(from: Date())
+
+        return envelope.manga.map { item in
+            // Convert Double volume number to a clean string ("1" not "1.0")
+            let posStr: String? = item.seriesPos.map { d in
+                d.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(d))" : "\(d)"
+            }
+            return Book(
+                id: item.id,
+                title: item.title,
+                author: item.author,
+                status: item.status,
+                rating: nil,
+                genre: nil,
+                type: .manga,
+                description: nil,
+                isbn: nil,
+                isbn13: nil,
+                seriesPos: posStr,
+                review: nil,
+                notes: item.notes,
+                olCoverId: item.olCoverId,
+                coverUrl: nil,
+                series: item.series,
+                yearRead: nil,
+                startDate: nil,
+                endDate: nil,
+                currentPage: nil,
+                pageCount: nil,
+                seriesPosition: item.seriesPos,
+                publisher: nil,
+                publishedDate: nil,
+                language: nil,
+                updatedAt: now
+            )
+        }
+    }
+
     // MARK: - Covers
 
     /// Thumbnail — small, used in list views.
@@ -244,6 +309,16 @@ actor ShelfAPIService: NSObject {
 
     private struct EmptyResponse: Codable {}
 }
+
+    // MARK: - Stats
+
+    func fetchStats() async throws -> StatsResponse {
+        try await get("/api/stats")
+    }
+
+    func fetchStatsExtended() async throws -> StatsExtendedResponse {
+        try await get("/api/stats/extended")
+    }
 
 // MARK: - TLS delegate (accept self-signed Pi cert)
 
