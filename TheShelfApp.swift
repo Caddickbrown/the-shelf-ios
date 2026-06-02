@@ -21,7 +21,7 @@ struct TheShelfApp: App {
                 } else {
                     ContentView()
                         .task {
-                            // On every foreground, sync if we have network
+                            ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, ignoreTLSErrors: true))
                             await SyncEngine.shared.sync(store: store)
                         }
                 }

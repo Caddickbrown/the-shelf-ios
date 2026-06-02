@@ -261,12 +261,15 @@ struct OnboardingView: View {
                     Task {
                         testing = true
                         error = nil
-                        // Quick connectivity test
+                        // Configure the API service with whatever URL the user entered
+                        ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, ignoreTLSErrors: true))
                         do {
                             _ = try await ShelfAPIService.shared.fetchBooksSince("2099-01-01T00:00:00Z")
                             onComplete()
+                        } catch let e as ShelfError {
+                            self.error = e.errorDescription ?? "Unknown ShelfError"
                         } catch {
-                            self.error = "Couldn't connect: \(error.localizedDescription)"
+                            self.error = "\(type(of: error)): \(error)"
                         }
                         testing = false
                     }

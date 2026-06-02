@@ -165,8 +165,13 @@ final class ShelfAPIService: NSObject {
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
         let req = try makeRequest(path: path, method: "GET")
-        let (data, response) = try await session.data(for: req)
-        // Surface HTTP errors
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: req)
+        } catch {
+            throw ShelfError.networkError("\(type(of: error))", error.localizedDescription)
+        }
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             let body = String(data: data, encoding: .utf8) ?? "<binary>"
             throw ShelfError.httpError(http.statusCode, body)
@@ -174,9 +179,8 @@ final class ShelfAPIService: NSObject {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
-            // Include raw JSON snippet in error so we can diagnose field mismatches
-            let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<unreadable>"
-            throw ShelfError.decodingError(error.localizedDescription, preview)
+            let preview = String(data: data.prefix(600), encoding: .utf8) ?? "<unreadable>"
+            throw ShelfError.decodingError("\(type(of: error)): \(error)", preview)
         }
     }
 
@@ -245,13 +249,16 @@ extension ShelfAPIService: URLSessionDelegate {
 enum ShelfError: LocalizedError {
     case httpError(Int, String)
     case decodingError(String, String)  // message, raw JSON preview
+    case networkError(String, String)   // error type, message
 
     var errorDescription: String? {
         switch self {
         case .httpError(let code, let body):
-            return "HTTP \(code): \(body.prefix(200))"
+            return "HTTP \(code):\n\(body.prefix(300))"
         case .decodingError(let msg, let preview):
-            return "Decode failed: \(msg)\n\nRaw response:\n\(preview)"
+            return "Decode error:\n\(msg)\n\nRaw response:\n\(preview)"
+        case .networkError(let type_, let msg):
+            return "Network error (\(type_)):\n\(msg)"
         }
     }
 }
