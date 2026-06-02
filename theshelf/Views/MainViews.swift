@@ -61,6 +61,7 @@ struct HomeView: View {
                 await SyncEngine.shared.sync(store: store)
             }
         }
+        .shelfBackground()
     }
 }
 
@@ -104,9 +105,11 @@ struct LibraryView: View {
                     }
                 }
                 .listStyle(.plain)
-            }
+            .scrollContentBackground(.hidden)
+            .background(ShelfTheme.bg)
             .navigationTitle("Library (\(filtered.count))")
         }
+        .shelfBackground()
     }
 }
 
@@ -126,6 +129,8 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(ShelfTheme.bg)
             .navigationTitle("Search")
             .searchable(text: $query, prompt: "Title, author, ISBN…")
             .overlay {
@@ -138,6 +143,7 @@ struct SearchView: View {
                 }
             }
         }
+        .shelfBackground()
     }
 }
 

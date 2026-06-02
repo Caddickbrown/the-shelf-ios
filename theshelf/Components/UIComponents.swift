@@ -8,7 +8,6 @@ struct CoverView: View {
     var loadFull: Bool = false
     @Environment(CoverCache.self) var cache
     @State private var imageData: Data?
-    @State private var loaded = false
 
     var body: some View {
         Group {
@@ -18,19 +17,17 @@ struct CoverView: View {
                     .scaledToFill()
             } else {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(.systemGray5))
+                    .fill(ShelfTheme.surface2)
                     .overlay(
                         Image(systemName: "book.closed")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(ShelfTheme.muted)
                     )
             }
         }
         .task(id: bookId) {
-            if loadFull {
-                imageData = await cache.fullCover(bookId: bookId)
-            } else {
-                imageData = await cache.thumbnail(bookId: bookId)
-            }
+            imageData = loadFull
+                ? await cache.fullCover(bookId: bookId)
+                : await cache.thumbnail(bookId: bookId)
         }
     }
 }
@@ -48,15 +45,16 @@ struct BookRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(book.title)
                     .font(.body)
+                    .foregroundStyle(ShelfTheme.text)
                     .lineLimit(2)
                 Text(book.author)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ShelfTheme.muted)
                     .lineLimit(1)
                 if let rating = book.rating {
                     Text(String(repeating: "★", count: rating))
                         .font(.caption2)
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(ShelfTheme.accent)
                 }
             }
             Spacer()
@@ -75,20 +73,21 @@ struct ReadingCard: View {
             CoverView(bookId: book.id)
                 .frame(width: 100, height: 150)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .shadow(radius: 2)
+                .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 3)
 
             Text(book.title)
                 .font(.caption.bold())
+                .foregroundStyle(ShelfTheme.text)
                 .lineLimit(2)
                 .frame(width: 100, alignment: .leading)
 
             if let progress = book.progress {
                 ProgressView(value: progress)
                     .frame(width: 100)
-                    .tint(Color.accentColor)
+                    .tint(ShelfTheme.accent)
                 Text("\(Int(progress * 100))%")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ShelfTheme.muted)
             }
         }
     }
@@ -103,17 +102,9 @@ struct StatusBadge: View {
             .font(.caption2.bold())
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(color.opacity(0.15))
-            .foregroundStyle(color)
+            .background(ShelfTheme.statusBg(status))
+            .foregroundStyle(ShelfTheme.statusFg(status))
             .clipShape(Capsule())
-    }
-    var color: Color {
-        switch status {
-        case .reading: return .blue
-        case .read:    return .green
-        case .toRead:  return .orange
-        case .dnf:     return .red
-        }
     }
 }
 
@@ -131,8 +122,13 @@ struct QuickActionButton: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color(.secondarySystemBackground))
+            .background(ShelfTheme.surface2)
+            .foregroundStyle(ShelfTheme.text)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(ShelfTheme.border, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -148,10 +144,12 @@ struct SyncButton: View {
             Task { await sync.sync(store: store) }
         } label: {
             if sync.isSyncing {
-                ProgressView().scaleEffect(0.8)
+                ProgressView().scaleEffect(0.8).tint(ShelfTheme.accent)
             } else {
-                Image(systemName: sync.pendingCount > 0 ? "arrow.triangle.2.circlepath.circle.fill" : "arrow.triangle.2.circlepath")
-                    .foregroundStyle(sync.pendingCount > 0 ? .orange : .primary)
+                Image(systemName: sync.pendingCount > 0
+                      ? "arrow.triangle.2.circlepath.circle.fill"
+                      : "arrow.triangle.2.circlepath")
+                    .foregroundStyle(sync.pendingCount > 0 ? ShelfTheme.orange : ShelfTheme.muted)
             }
         }
         .disabled(sync.isSyncing)
@@ -164,13 +162,14 @@ struct SyncStatusBanner: View {
     @Environment(SyncEngine.self) var sync
     var body: some View {
         HStack(spacing: 8) {
-            ProgressView().scaleEffect(0.7)
-            Text("Syncing…").font(.caption)
+            ProgressView().scaleEffect(0.7).tint(ShelfTheme.accent)
+            Text("Syncing…").font(.caption).foregroundStyle(ShelfTheme.muted)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(.ultraThinMaterial)
+        .background(ShelfTheme.surface2)
         .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(ShelfTheme.border, lineWidth: 1))
         .padding(.top, 8)
     }
 }
@@ -182,9 +181,13 @@ struct SectionHeader: View {
     var count: Int? = nil
     var body: some View {
         HStack {
-            Text(title).font(.headline)
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(ShelfTheme.text)
             if let n = count {
-                Text("(\(n))").foregroundStyle(.secondary).font(.subheadline)
+                Text("(\(n))")
+                    .foregroundStyle(ShelfTheme.muted)
+                    .font(.subheadline)
             }
             Spacer()
         }
@@ -199,8 +202,8 @@ struct LabelValue: View {
     let value: String
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.subheadline)
+            Text(label).font(.caption).foregroundStyle(ShelfTheme.muted)
+            Text(value).font(.subheadline).foregroundStyle(ShelfTheme.text)
         }
     }
 }
@@ -211,8 +214,8 @@ struct MetadataGrid: View {
     let book: Book
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            if let g = book.genre         { LabelValue(label: "Genre", value: g) }
-            if let n = book.pageCount     { LabelValue(label: "Pages", value: "\(n)") }
+            if let g = book.genre         { LabelValue(label: "Genre",     value: g) }
+            if let n = book.pageCount     { LabelValue(label: "Pages",     value: "\(n)") }
             if let p = book.publisher     { LabelValue(label: "Publisher", value: p) }
             if let d = book.publishedDate { LabelValue(label: "Published", value: d) }
             if let i = book.isbn13 ?? book.isbn { LabelValue(label: "ISBN", value: i) }
@@ -235,11 +238,18 @@ struct FilterBar: View {
                     selectedStatus = nil
                 }
                 ForEach(ReadStatus.allCases, id: \.self) { s in
-                    FilterChip(label: s.label, isSelected: selectedStatus == s) {
+                    FilterChip(
+                        label: s.label,
+                        isSelected: selectedStatus == s,
+                        activeColor: ShelfTheme.statusFg(s),
+                        activeBg: ShelfTheme.statusBg(s)
+                    ) {
                         selectedStatus = selectedStatus == s ? nil : s
                     }
                 }
-                Divider().frame(height: 20)
+                Divider()
+                    .frame(height: 20)
+                    .overlay(ShelfTheme.border)
                 Menu {
                     ForEach(LibraryView.SortOption.allCases, id: \.self) { opt in
                         Button(opt.rawValue) { sortBy = opt }
@@ -251,23 +261,32 @@ struct FilterBar: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .background(Color(.systemBackground))
+        .background(ShelfTheme.bg)
     }
 }
 
 struct FilterChip: View {
     let label: String
     let isSelected: Bool
+    var activeColor: Color = ShelfTheme.bg
+    var activeBg: Color = ShelfTheme.accent
     let action: () -> Void
+
     var body: some View {
         Button(action: action) {
             Text(label)
                 .font(.caption.bold())
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
-                .foregroundStyle(isSelected ? .white : .primary)
+                .background(isSelected ? activeBg : ShelfTheme.surface2)
+                .foregroundStyle(isSelected ? activeColor : ShelfTheme.muted)
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule().strokeBorder(
+                        isSelected ? activeBg : ShelfTheme.border,
+                        lineWidth: 1
+                    )
+                )
         }
         .buttonStyle(.plain)
     }
@@ -279,26 +298,26 @@ struct QuickStatsRow: View {
     let store: BookStore
     var body: some View {
         HStack(spacing: 0) {
-            StatCell(value: "\(store.books(status: .read).count)", label: "Read")
-            Divider().frame(height: 40)
-            StatCell(value: "\(store.books(status: .reading).count)", label: "Reading")
-            Divider().frame(height: 40)
-            StatCell(value: "\(store.books(status: .toRead).count)", label: "To Read")
-            Divider().frame(height: 40)
-            StatCell(value: "\(store.books.count)", label: "Total")
+            StatCell(value: "\(store.books(status: .read).count)",    label: "Read",    color: ShelfTheme.green)
+            Divider().frame(height: 40).overlay(ShelfTheme.border)
+            StatCell(value: "\(store.books(status: .reading).count)", label: "Reading", color: ShelfTheme.blue)
+            Divider().frame(height: 40).overlay(ShelfTheme.border)
+            StatCell(value: "\(store.books(status: .toRead).count)",  label: "To Read", color: ShelfTheme.orange)
+            Divider().frame(height: 40).overlay(ShelfTheme.border)
+            StatCell(value: "\(store.books.count)",                   label: "Total",   color: ShelfTheme.text)
         }
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shelfCard()
     }
 }
 
 struct StatCell: View {
     let value: String
     let label: String
+    var color: Color = ShelfTheme.text
     var body: some View {
         VStack(spacing: 2) {
-            Text(value).font(.title3.bold())
-            Text(label).font(.caption2).foregroundStyle(.secondary)
+            Text(value).font(.title3.bold()).foregroundStyle(color)
+            Text(label).font(.caption2).foregroundStyle(ShelfTheme.muted)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -328,9 +347,16 @@ struct StatusPickerSheet: View {
                 Section {
                     ForEach(ReadStatus.allCases, id: \.self) { s in
                         HStack {
+                            Circle()
+                                .fill(ShelfTheme.statusFg(s))
+                                .frame(width: 8, height: 8)
                             Text(s.emoji + " " + s.label)
+                                .foregroundStyle(ShelfTheme.text)
                             Spacer()
-                            if status == s { Image(systemName: "checkmark").foregroundStyle(Color.accentColor) }
+                            if status == s {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(ShelfTheme.accent)
+                            }
                         }
                         .contentShape(Rectangle())
                         .onTapGesture { status = s }
@@ -352,6 +378,7 @@ struct StatusPickerSheet: View {
                                            endDate: endDate.isEmpty ? nil : endDate)
                         dismiss()
                     }
+                    .foregroundStyle(ShelfTheme.accent)
                 }
             }
         }
@@ -372,17 +399,20 @@ struct RatingPickerSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 32) {
-                Text("Rate this book").font(.headline)
+                Text("Rate this book")
+                    .font(.headline)
+                    .foregroundStyle(ShelfTheme.text)
                 HStack(spacing: 16) {
                     ForEach(1...5, id: \.self) { n in
                         Image(systemName: n <= (rating ?? 0) ? "star.fill" : "star")
                             .font(.largeTitle)
-                            .foregroundStyle(.yellow)
+                            .foregroundStyle(ShelfTheme.accent)
                             .onTapGesture { rating = rating == n ? nil : n }
                     }
                 }
                 Button("Clear rating", role: .destructive) { rating = nil }
                     .font(.callout)
+                    .foregroundStyle(ShelfTheme.red)
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
@@ -390,6 +420,7 @@ struct RatingPickerSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { store.updateRating(book.id, rating: rating); dismiss() }
+                        .foregroundStyle(ShelfTheme.accent)
                 }
             }
         }
@@ -420,9 +451,10 @@ struct ProgressEditorSheet: View {
                 if let total = book.pageCount, let n = Int(currentPage) {
                     Section {
                         ProgressView(value: Double(n) / Double(total))
-                            .tint(Color.accentColor)
+                            .tint(ShelfTheme.accent)
                         Text("\(n) of \(total) pages · \(Int(Double(n)/Double(total)*100))%")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(ShelfTheme.muted)
                     }
                 }
             }
@@ -435,6 +467,7 @@ struct ProgressEditorSheet: View {
                         store.updateProgress(book.id, currentPage: Int(currentPage))
                         dismiss()
                     }
+                    .foregroundStyle(ShelfTheme.accent)
                 }
             }
         }
@@ -470,28 +503,37 @@ struct ISBNSearchView: View {
                         isSearching = false
                     }
                 }
+                .foregroundStyle(ShelfTheme.accent)
                 .disabled(query.isEmpty || isSearching)
             }
             .padding()
 
-            if let error { Text(error).foregroundStyle(.red).font(.caption).padding(.horizontal) }
-            if isSearching { ProgressView("Searching…").padding() }
+            if let error {
+                Text(error)
+                    .foregroundStyle(ShelfTheme.red)
+                    .font(.caption)
+                    .padding(.horizontal)
+            }
+            if isSearching { ProgressView("Searching…").tint(ShelfTheme.accent).padding() }
 
             List(results) { result in
                 Button {
                     onSelect(result)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(result.title).font(.body.bold())
-                        Text(result.author).foregroundStyle(.secondary).font(.caption)
+                        Text(result.title).font(.body.bold()).foregroundStyle(ShelfTheme.text)
+                        Text(result.author).foregroundStyle(ShelfTheme.muted).font(.caption)
                         if let isbn = result.isbn13 ?? result.isbn {
-                            Text(isbn).foregroundStyle(.tertiary).font(.caption2)
+                            Text(isbn).foregroundStyle(ShelfTheme.muted.opacity(0.6)).font(.caption2)
                         }
                     }
                 }
                 .buttonStyle(.plain)
+                .listRowBackground(ShelfTheme.surface)
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(ShelfTheme.bg)
         }
     }
 }
@@ -555,8 +597,11 @@ struct ManualAddForm: View {
                     )
                     onAdd(book)
                 }
+                .foregroundStyle(ShelfTheme.accent)
                 .disabled(title.isEmpty || author.isEmpty)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(ShelfTheme.bg)
     }
 }

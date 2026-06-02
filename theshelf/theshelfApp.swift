@@ -40,6 +40,7 @@ struct TheShelfApp: App {
             .environment(store)
             .environment(syncEngine)
             .environment(coverCache)
+            .tint(ShelfTheme.accent)
         }
         // Sync on foreground — using scenePhase avoids re-triggering on every
         // @Observable state change (which caused the request flood).
