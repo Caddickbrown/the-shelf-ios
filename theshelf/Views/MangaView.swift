@@ -183,11 +183,7 @@ struct MangaView: View {
                 if groups.isEmpty {
                     HStack {
                         Spacer()
-                        Text(
-                            searchText.isEmpty
-                                ? "No manga found"
-                                : "No results for "\(searchText)""
-                        )
+                        Text(searchText.isEmpty ? "No manga found" : "No results for '\(searchText)'")
                         .font(.callout)
                         .foregroundStyle(theme.muted)
                         .padding(.top, 60)

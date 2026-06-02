@@ -309,7 +309,8 @@ struct OnboardingView: View {
                         error = nil
                         ShelfAPIService.shared.configure(ServerConfig(
                             baseURL: serverURL.trimmingCharacters(in: .whitespaces),
-                            ignoreTLSErrors: true
+                            ignoreTLSErrors: true,
+                            fallbackURL: nil
                         ))
                         do {
                             _ = try await ShelfAPIService.shared.fetchBooksSince("2099-01-01T00:00:00Z")
