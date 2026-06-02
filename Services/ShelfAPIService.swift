@@ -5,10 +5,12 @@ import Combine
 
 struct ServerConfig: Codable {
     var baseURL: String          // e.g. "https://192.168.4.185:8773"
+    var fallbackURL: String      // e.g. "https://mypidomain.com:8773" — tried if primary fails
     var ignoreTLSErrors: Bool    // true for self-signed cert on Pi
 
     static let `default` = ServerConfig(
         baseURL: "https://192.168.4.185:8773",
+        fallbackURL: "",
         ignoreTLSErrors: true
     )
 }
@@ -164,7 +166,18 @@ final class ShelfAPIService: NSObject {
     // MARK: - Private helpers
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let req = try makeRequest(path: path, method: "GET")
+        // Try primary, then fallback if primary fails at the network level
+        do {
+            return try await getFrom(base: config.baseURL, path: path)
+        } catch let primary as ShelfError {
+            let fb = config.fallbackURL.trimmingCharacters(in: .whitespaces)
+            guard !fb.isEmpty, case .networkError = primary else { throw primary }
+            return try await getFrom(base: fb, path: path)
+        }
+    }
+
+    private func getFrom<T: Decodable>(base: String, path: String) async throws -> T {
+        var req = try makeRequest(path: path, method: "GET", base: base)
         let data: Data
         let response: URLResponse
         do {
@@ -205,8 +218,9 @@ final class ShelfAPIService: NSObject {
         _ = try await session.data(for: req)
     }
 
-    private func makeRequest(path: String, method: String) throws -> URLRequest {
-        guard let url = URL(string: config.baseURL + path) else {
+    private func makeRequest(path: String, method: String, base: String? = nil) throws -> URLRequest {
+        let resolvedBase = base ?? config.baseURL
+        guard let url = URL(string: resolvedBase + path) else {
             throw URLError(.badURL)
         }
         var req = URLRequest(url: url)

@@ -8,6 +8,7 @@ struct TheShelfApp: App {
     @State private var syncEngine = SyncEngine.shared
     @State private var coverCache = CoverCache.shared
     @AppStorage("shelf.serverURL") private var serverURL = "https://192.168.4.185:8773"
+    @AppStorage("shelf.fallbackURL") private var fallbackURL = ""
     @AppStorage("shelf.hasLaunched") private var hasLaunched = false
 
     var body: some Scene {
@@ -21,7 +22,7 @@ struct TheShelfApp: App {
                 } else {
                     ContentView()
                         .task {
-                            ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, ignoreTLSErrors: true))
+                            ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, fallbackURL: fallbackURL, ignoreTLSErrors: true))
                             await SyncEngine.shared.sync(store: store)
                         }
                 }

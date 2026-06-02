@@ -145,6 +145,7 @@ struct SearchView: View {
 
 struct SettingsView: View {
     @AppStorage("shelf.serverURL") private var serverURL = "https://192.168.4.185:8773"
+    @AppStorage("shelf.fallbackURL") private var fallbackURL = ""
     @Environment(BookStore.self) var store
     @Environment(SyncEngine.self) var sync
     @Environment(CoverCache.self) var cache
@@ -158,7 +159,13 @@ struct SettingsView: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                    TextField("Fallback URL (optional)", text: $fallbackURL)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .foregroundStyle(.secondary)
                     Button("Test Connection") {
+                        ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, fallbackURL: fallbackURL, ignoreTLSErrors: true))
                         Task { await store.loadFromServer() }
                     }
                 }
@@ -217,6 +224,7 @@ struct SettingsView: View {
 struct OnboardingView: View {
     @Binding var serverURL: String
     let onComplete: () -> Void
+    @AppStorage("shelf.fallbackURL") private var fallbackURL = ""
     @State private var testing = false
     @State private var error: String?
 
@@ -232,13 +240,23 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Server URL").font(.caption).foregroundStyle(.secondary)
-                    TextField("https://192.168.x.x:8773", text: $serverURL)
-                        .textFieldStyle(.roundedBorder)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Server URL").font(.caption).foregroundStyle(.secondary)
+                        TextField("https://192.168.x.x:8773", text: $serverURL)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Fallback URL (optional)").font(.caption).foregroundStyle(.secondary)
+                        TextField("https://mypi.example.com:8773", text: $fallbackURL)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
                 }
                 .padding(.horizontal)
 
@@ -262,7 +280,7 @@ struct OnboardingView: View {
                         testing = true
                         error = nil
                         // Configure the API service with whatever URL the user entered
-                        ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, ignoreTLSErrors: true))
+                        ShelfAPIService.shared.configure(ServerConfig(baseURL: serverURL, fallbackURL: fallbackURL, ignoreTLSErrors: true))
                         do {
                             _ = try await ShelfAPIService.shared.fetchBooksSince("2099-01-01T00:00:00Z")
                             onComplete()
