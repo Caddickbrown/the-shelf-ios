@@ -5,10 +5,12 @@ import Foundation
 struct ServerConfig: Codable {
     var baseURL: String          // e.g. "https://192.168.4.185:8773"
     var ignoreTLSErrors: Bool    // true for self-signed cert on Pi
+    var fallbackURL: String?     // tried if baseURL fails
 
     static let `default` = ServerConfig(
         baseURL: "https://192.168.4.185:8773",
-        ignoreTLSErrors: true
+        ignoreTLSErrors: true,
+        fallbackURL: nil
     )
 }
 
@@ -171,7 +173,21 @@ actor ShelfAPIService: NSObject {
     // MARK: - Private helpers
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let req = try makeRequest(path: path, method: "GET")
+        do {
+            return try await getFromBase(config.baseURL, path: path)
+        } catch {
+            // Try fallback if primary fails and a fallback is configured
+            if let fallback = config.fallbackURL, !fallback.isEmpty {
+                return try await getFromBase(fallback, path: path)
+            }
+            throw error
+        }
+    }
+
+    private func getFromBase<T: Decodable>(_ base: String, path: String) async throws -> T {
+        guard let url = URL(string: base + path) else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             let body = String(data: data, encoding: .utf8) ?? "<binary>"

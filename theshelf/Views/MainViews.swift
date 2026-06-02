@@ -145,21 +145,56 @@ struct SearchView: View {
 
 struct SettingsView: View {
     @AppStorage("shelf.serverURL") private var serverURL = "https://192.168.4.185:8773"
+    @AppStorage("shelf.fallbackURL") private var fallbackURL = ""
     @Environment(BookStore.self) var store
     @Environment(SyncEngine.self) var sync
     @Environment(CoverCache.self) var cache
     @State private var showClearConfirm = false
+    @State private var connectionStatus: String? = nil
+    @State private var testingConnection = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Server") {
-                    TextField("Server URL", text: $serverURL)
+                Section(header: Text("Server"), footer: Text("Fallback is tried automatically if the primary URL fails.")) {
+                    TextField("Primary URL", text: $serverURL)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
-                    Button("Test Connection") {
-                        Task { await store.loadFromServer() }
+                    TextField("Fallback URL (optional)", text: $fallbackURL)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        Task {
+                            testingConnection = true
+                            connectionStatus = nil
+                            ShelfAPIService.shared.configure(ServerConfig(
+                                baseURL: serverURL.trimmingCharacters(in: .whitespaces),
+                                ignoreTLSErrors: true,
+                                fallbackURL: fallbackURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil
+                                    : fallbackURL.trimmingCharacters(in: .whitespaces)
+                            ))
+                            do {
+                                _ = try await ShelfAPIService.shared.fetchBooksSince("2099-01-01T00:00:00Z")
+                                connectionStatus = "✓ Connected successfully"
+                            } catch {
+                                connectionStatus = "✗ \(error.localizedDescription)"
+                            }
+                            testingConnection = false
+                        }
+                    } label: {
+                        HStack {
+                            Text(testingConnection ? "Testing…" : "Test Connection")
+                            if testingConnection { Spacer(); ProgressView() }
+                        }
+                    }
+                    .disabled(testingConnection)
+                    if let status = connectionStatus {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(status.hasPrefix("✓") ? .green : .red)
                     }
                 }
 

@@ -21,6 +21,9 @@ final class SyncEngine {
     private(set) var pendingCount: Int = 0
     private(set) var lastError: String?
 
+    // Don't hammer the server — minimum 30s between automatic syncs
+    private let minSyncInterval: TimeInterval = 30
+
     private var mutationQueue: [PendingMutation] = []
     private let queueKey = "shelf.pendingMutations"
     private let lastSyncKey = "shelf.lastSync"
@@ -46,6 +49,10 @@ final class SyncEngine {
     /// 3. Merge with last-write-wins
     @discardableResult
     func sync(store: BookStore) async -> Bool {
+        // Rate-limit automatic syncs; manual syncs (from button) always go through
+        if let last = lastSyncDate, Date().timeIntervalSince(last) < minSyncInterval, !mutationQueue.isEmpty == false {
+            return false
+        }
         guard !isSyncing else { return false }
         isSyncing = true
         lastError = nil
@@ -68,9 +75,15 @@ final class SyncEngine {
                 persistQueue()
             }
 
-            // Step 2: pull server changes since lastSync
-            let since = lastSyncTimestamp ?? "1970-01-01T00:00:00Z"
-            let serverBooks = try await api.fetchBooksSince(since)
+            // Step 2: pull server changes
+            // First launch (no lastSync): paginated full fetch to get all 11k+ books
+            // Subsequent syncs: incremental pull only changed books
+            let serverBooks: [Book]
+            if lastSyncTimestamp == nil {
+                serverBooks = try await api.fetchAllBooks()
+            } else {
+                serverBooks = try await api.fetchBooksSince(lastSyncTimestamp!)
+            }
 
             // Step 3: merge — server wins unless we have a newer local mutation for that field
             store.mergeFromServer(serverBooks, pendingMutations: mutationQueue)
