@@ -7,7 +7,7 @@ struct ServerConfig: Codable {
     var baseURL: String          // e.g. "https://192.168.4.185:8773"
     var ignoreTLSErrors: Bool    // true for self-signed cert on Pi
 
-    nonisolated(unsafe) static let `default` = ServerConfig(
+    static let `default` = ServerConfig(
         baseURL: "https://192.168.4.185:8773",
         ignoreTLSErrors: true
     )

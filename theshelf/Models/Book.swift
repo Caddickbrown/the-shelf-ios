@@ -69,7 +69,9 @@ struct Book: Identifiable, Codable, Hashable {
     var hasCover: Bool {
         olCoverId != nil || coverUrl != nil
     }
+}
 
+extension Book {
     nonisolated init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
