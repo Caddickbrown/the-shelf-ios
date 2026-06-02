@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 // MARK: - ServerConfig
 
@@ -49,10 +48,18 @@ final class ShelfAPIService: NSObject {
 
     // MARK: - Books
 
-    /// Fetch all books (initial load or full refresh).
+    /// Fetch all books (initial load or full refresh). Paginates until server reports no more.
     func fetchAllBooks() async throws -> [Book] {
-        let envelope: BooksEnvelope = try await get("/api/books?limit=99999&offset=0")
-        return envelope.books
+        var all: [Book] = []
+        var offset = 0
+        let limit = 500
+        while true {
+            let envelope: BooksEnvelope = try await get("/api/books?limit=\(limit)&offset=\(offset)")
+            all.append(contentsOf: envelope.books)
+            guard envelope.hasMore == true else { break }
+            offset += limit
+        }
+        return all
     }
 
     /// Fetch books updated since a given ISO 8601 timestamp.
@@ -177,7 +184,7 @@ final class ShelfAPIService: NSObject {
     }
 
     private func getFrom<T: Decodable>(base: String, path: String) async throws -> T {
-        var req = try makeRequest(path: path, method: "GET", base: base)
+        let req = try makeRequest(path: path, method: "GET", base: base)
         let data: Data
         let response: URLResponse
         do {
@@ -230,7 +237,6 @@ final class ShelfAPIService: NSObject {
 
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
-        d.keyDecodingStrategy = .convertFromSnakeCase
         return d
     }()
 
