@@ -108,7 +108,7 @@ extension Book {
         if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos) {
             seriesPos = d.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(d))" : "\(d)"
         } else if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos),
-                  let s, !s.isEmpty, s != "-" {
+                  !s.isEmpty, s != "-" {
             seriesPos = s
         } else {
             seriesPos = nil
