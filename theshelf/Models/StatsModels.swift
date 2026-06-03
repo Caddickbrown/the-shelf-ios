@@ -26,6 +26,19 @@ struct StatsResponse: Decodable, Sendable {
         case topAuthors    = "top_authors"
         case ratings
     }
+
+    nonisolated init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        total        = try c.decode(Int.self,           forKey: .total)
+        totalRead    = try c.decode(Int.self,           forKey: .totalRead)
+        totalReading = try c.decode(Int.self,           forKey: .totalReading)
+        totalToRead  = try c.decode(Int.self,           forKey: .totalToRead)
+        avgRating    = try c.decodeIfPresent(Double.self, forKey: .avgRating)
+        fiveStars    = try c.decode(Int.self,           forKey: .fiveStars)
+        byYear       = try c.decode([YearCount].self,   forKey: .byYear)
+        topAuthors   = try c.decode([AuthorCount].self, forKey: .topAuthors)
+        ratings      = try c.decode([String: Int].self, forKey: .ratings)
+    }
 }
 
 struct YearCount: Decodable, Identifiable, Sendable {
@@ -53,6 +66,16 @@ struct StatsExtendedResponse: Decodable, Sendable {
         case unreadCount  = "unread_count"
         case avgPerYear   = "avg_per_year"
         case yearsToClear = "years_to_clear"
+    }
+
+    nonisolated init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        genres       = try c.decode([GenreCount].self,  forKey: .genres)
+        monthly      = try c.decode([MonthCount].self,  forKey: .monthly)
+        unreadCount  = try c.decode(Int.self,            forKey: .unreadCount)
+        avgPerYear   = try c.decodeIfPresent(Double.self, forKey: .avgPerYear)
+        yearsToClear = try c.decodeIfPresent(Double.self, forKey: .yearsToClear)
+        formats      = try c.decode([FormatCount].self,  forKey: .formats)
     }
 }
 
