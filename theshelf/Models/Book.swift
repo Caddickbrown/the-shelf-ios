@@ -76,39 +76,43 @@ struct Book: Identifiable, Codable, Hashable {
 extension Book {
     nonisolated init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(String.self, forKey: .id)
-        title = try c.decode(String.self, forKey: .title)
-        author = try c.decode(String.self, forKey: .author)
-        status = try c.decode(ReadStatus.self, forKey: .status)
-        rating = try c.decodeIfPresent(Int.self, forKey: .rating)
-        genre = try c.decodeIfPresent(String.self, forKey: .genre)
-        type = try c.decodeIfPresent(BookType.self, forKey: .type)
-        description = try c.decodeIfPresent(String.self, forKey: .description)
-        isbn = try c.decodeIfPresent(String.self, forKey: .isbn)
-        isbn13 = try c.decodeIfPresent(String.self, forKey: .isbn13)
-        // series_pos is stored as TEXT in SQLite — try String first, then Double (for numeric-only values)
-        if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos) {
-            seriesPos = s
-        } else if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos) {
+        id              = try c.decode(String.self, forKey: .id)
+        title           = try c.decode(String.self, forKey: .title)
+        author          = try c.decode(String.self, forKey: .author)
+        status          = try c.decode(ReadStatus.self, forKey: .status)
+        rating          = try c.decodeIfPresent(Int.self, forKey: .rating)
+        genre           = try c.decodeIfPresent(String.self, forKey: .genre)
+        type            = try c.decodeIfPresent(BookType.self, forKey: .type)
+        description     = try c.decodeIfPresent(String.self, forKey: .description)
+        isbn            = try c.decodeIfPresent(String.self, forKey: .isbn)
+        isbn13          = try c.decodeIfPresent(String.self, forKey: .isbn13)
+        review          = try c.decodeIfPresent(String.self, forKey: .review)
+        notes           = try c.decodeIfPresent(String.self, forKey: .notes)
+        olCoverId       = try c.decodeIfPresent(Int.self, forKey: .olCoverId)
+        coverUrl        = try c.decodeIfPresent(String.self, forKey: .coverUrl)
+        series          = try c.decodeIfPresent(String.self, forKey: .series)
+        yearRead        = try c.decodeIfPresent(Int.self, forKey: .yearRead)
+        startDate       = try c.decodeIfPresent(String.self, forKey: .startDate)
+        endDate         = try c.decodeIfPresent(String.self, forKey: .endDate)
+        currentPage     = try c.decodeIfPresent(Int.self, forKey: .currentPage)
+        pageCount       = try c.decodeIfPresent(Int.self, forKey: .pageCount)
+        seriesPosition  = try c.decodeIfPresent(Double.self, forKey: .seriesPosition)
+        publisher       = try c.decodeIfPresent(String.self, forKey: .publisher)
+        publishedDate   = try c.decodeIfPresent(String.self, forKey: .publishedDate)
+        language        = try c.decodeIfPresent(String.self, forKey: .language)
+        updatedAt       = (try? c.decodeIfPresent(String.self, forKey: .updatedAt)) ?? ""
+        readingOrder    = try c.decodeIfPresent(Int.self, forKey: .readingOrder)
+
+        // series_pos: server may send string "1", float 1.0, or null.
+        // Try Double first (most common from server), format cleanly, preserve .5 etc.
+        if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos) {
             seriesPos = d.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(d))" : "\(d)"
+        } else if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos),
+                  let s, !s.isEmpty, s != "-" {
+            seriesPos = s
         } else {
             seriesPos = nil
         }
-        review = try c.decodeIfPresent(String.self, forKey: .review)
-        notes = try c.decodeIfPresent(String.self, forKey: .notes)
-        olCoverId = try c.decodeIfPresent(Int.self, forKey: .olCoverId)
-        coverUrl = try c.decodeIfPresent(String.self, forKey: .coverUrl)
-        series = try c.decodeIfPresent(String.self, forKey: .series)
-        yearRead = try c.decodeIfPresent(Int.self, forKey: .yearRead)
-        startDate = try c.decodeIfPresent(String.self, forKey: .startDate)
-        endDate = try c.decodeIfPresent(String.self, forKey: .endDate)
-        currentPage = try c.decodeIfPresent(Int.self, forKey: .currentPage)
-        pageCount = try c.decodeIfPresent(Int.self, forKey: .pageCount)
-        seriesPosition = try c.decodeIfPresent(Double.self, forKey: .seriesPosition)
-        publisher = try c.decodeIfPresent(String.self, forKey: .publisher)
-        publishedDate = try c.decodeIfPresent(String.self, forKey: .publishedDate)
-        language = try c.decodeIfPresent(String.self, forKey: .language)
-        updatedAt = (try? c.decodeIfPresent(String.self, forKey: .updatedAt)) ?? ""
     }
 }
 
