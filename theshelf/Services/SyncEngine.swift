@@ -63,6 +63,7 @@ final class SyncEngine {
             if !mutationQueue.isEmpty {
                 let payloads = mutationQueue.map { m in
                     MutationPayload(
+                        id: m.id.uuidString,
                         bookId: m.bookId,
                         timestamp: ISO8601DateFormatter().string(from: m.timestamp),
                         changes: m.changes
@@ -70,7 +71,7 @@ final class SyncEngine {
                 }
                 let applied = try await api.pushMutations(payloads)
                 // Remove successfully applied mutations
-                mutationQueue.removeAll { m in applied.contains(m.bookId) }
+                mutationQueue.removeAll { m in applied.contains(m.id.uuidString) }
                 pendingCount = mutationQueue.count
                 persistQueue()
             }

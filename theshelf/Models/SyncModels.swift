@@ -54,11 +54,13 @@ struct AnyCodable: Codable {
 // MARK: - Sync Payload (sent to server)
 
 struct MutationPayload: Codable {
+    let id: String          // mutation UUID — returned in server's `applied` list
     let bookId: String
     let timestamp: String   // ISO 8601
     let changes: [String: AnyCodable]
 
     enum CodingKeys: String, CodingKey {
+        case id
         case bookId = "book_id"
         case timestamp, changes
     }

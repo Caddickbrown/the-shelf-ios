@@ -444,22 +444,31 @@ struct AddBookView: View {
             updatedAt: ISO8601DateFormatter().string(from: Date()),
             readingOrder: nil
         )
+        // Add locally with a temp UUID so the UI responds immediately
         store.addBook(book)
         Task {
-            _ = try? await ShelfAPIService.shared.createBook(BookCreateRequest(
-                title: result.title,
-                author: result.author,
-                status: .toRead,
-                isbn: result.isbn,
-                isbn13: result.isbn13,
-                pageCount: result.pageCount,
-                genre: nil,
-                description: result.description,
-                coverUrl: result.coverUrl,
-                type: .book,
-                publishedDate: result.publishedDate,
-                publisher: result.publisher
-            ))
+            do {
+                // Server generates its own slug-based ID — replace local book with server's version
+                let serverBook = try await ShelfAPIService.shared.createBook(BookCreateRequest(
+                    title: result.title,
+                    author: result.author,
+                    status: .toRead,
+                    isbn: result.isbn,
+                    isbn13: result.isbn13,
+                    pageCount: result.pageCount,
+                    genre: nil,
+                    description: result.description,
+                    coverUrl: result.coverUrl,
+                    type: .book,
+                    publishedDate: result.publishedDate,
+                    publisher: result.publisher
+                ))
+                // Swap the temp local book for the server's canonical version
+                store.removeBook(id: book.id)
+                store.addBook(serverBook)
+            } catch {
+                // Server unreachable — keep local copy; it will sync when back online
+            }
             await sync.sync(store: store)
         }
     }
