@@ -168,6 +168,7 @@ struct ReadingLogEntry: Identifiable, Decodable {
     let dateFinished: String?
     let yearRead: Int?
     let rating: Int?
+    let review: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -176,5 +177,6 @@ struct ReadingLogEntry: Identifiable, Decodable {
         case dateFinished = "date_finished"
         case yearRead = "year_read"
         case rating
+        case review
     }
 }

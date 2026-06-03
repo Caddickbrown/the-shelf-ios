@@ -12,6 +12,7 @@ struct BookDetailView: View {
     @State private var showStatusPicker = false
     @State private var showRatingPicker = false
     @State private var showProgressEditor = false
+    @State private var showDeleteConfirm = false
 
     private var current: Book { store.book(id: book.id) ?? book }
 
@@ -54,6 +55,9 @@ struct BookDetailView: View {
                     }
                     QuickActionButton(label: "Edit", icon: "pencil") {
                         showEditSheet = true
+                    }
+                    QuickActionButton(label: "Delete", icon: "trash") {
+                        showDeleteConfirm = true
                     }
                 }
                 .padding(.horizontal)
@@ -115,11 +119,6 @@ struct BookDetailView: View {
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") { showEditSheet = true }
-            }
-        }
         .sheet(isPresented: $showEditSheet) {
             BookEditView(book: current)
         }
@@ -131,6 +130,12 @@ struct BookDetailView: View {
         }
         .sheet(isPresented: $showProgressEditor) {
             ProgressEditorSheet(book: current)
+        }
+        .confirmationDialog("Delete this book?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                store.removeBook(id: book.id)
+                Task { _ = try? await ShelfAPIService.shared.deleteBook(id: book.id) }
+            }
         }
     }
 }
@@ -147,8 +152,6 @@ struct BookEditView: View {
     @State private var author: String
     @State private var status: ReadStatus
     @State private var rating: Int?
-    @State private var startDate: String
-    @State private var endDate: String
     @State private var review: String
     @State private var notes: String
     @State private var genre: String
@@ -167,15 +170,13 @@ struct BookEditView: View {
         _author = State(initialValue: book.author)
         _status = State(initialValue: book.status)
         _rating = State(initialValue: book.rating)
-        _startDate = State(initialValue: book.startDate ?? "")
-        _endDate = State(initialValue: book.endDate ?? "")
         _review = State(initialValue: book.review ?? "")
         _notes = State(initialValue: book.notes ?? "")
         _genre = State(initialValue: book.genre ?? "")
         _currentPage = State(initialValue: book.currentPage.map(String.init) ?? "")
         _pageCount = State(initialValue: book.pageCount.map(String.init) ?? "")
         _series = State(initialValue: book.series ?? "")
-        _seriesPosition = State(initialValue: book.seriesPosition.map { "\($0)" } ?? "")
+        _seriesPosition = State(initialValue: book.seriesPos ?? "")
         _publisher = State(initialValue: book.publisher ?? "")
         _publishedDate = State(initialValue: book.publishedDate ?? "")
         _bookType = State(initialValue: book.type ?? .book)
@@ -199,8 +200,6 @@ struct BookEditView: View {
                             Text(s.label).tag(s)
                         }
                     }
-                    OptionalDateRow(label: "Start date", text: $startDate)
-                    OptionalDateRow(label: "End date", text: $endDate)
                     TextField("Current page", text: $currentPage)
                         .keyboardType(.numberPad)
                     TextField("Total pages", text: $pageCount)
@@ -273,11 +272,9 @@ struct BookEditView: View {
             "published_date": publishedDate.isEmpty ? NSNull() : publishedDate,
         ]
         if let r = rating { changes["rating"] = r } else { changes["rating"] = NSNull() }
-        if !startDate.isEmpty { changes["start_date"] = startDate }
-        if !endDate.isEmpty { changes["end_date"] = endDate }
         if let n = Int(currentPage) { changes["current_page"] = n }
         if let n = Int(pageCount) { changes["page_count"] = n }
-        if let n = Double(seriesPosition) { changes["series_position"] = n }
+        changes["series_pos"] = seriesPosition.isEmpty ? NSNull() : seriesPosition
 
         store.updateFields(book.id, changes: changes)
         Task { await SyncEngine.shared.sync(store: store) }
@@ -395,7 +392,8 @@ struct AddBookView: View {
             publisher: result.publisher,
             publishedDate: result.publishedDate,
             language: nil,
-            updatedAt: ISO8601DateFormatter().string(from: Date())
+            updatedAt: ISO8601DateFormatter().string(from: Date()),
+            readingOrder: nil
         )
         store.addBook(book)
         Task {
@@ -426,6 +424,8 @@ struct ReadingHistorySection: View {
     @State private var entries: [ReadingLogEntry] = []
     @State private var isLoading = false
     @State private var showAddSheet = false
+    @State private var editingEntry: ReadingLogEntry? = nil
+    @State private var deleteTarget: ReadingLogEntry? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -443,25 +443,39 @@ struct ReadingHistorySection: View {
                     .font(.callout).foregroundStyle(theme.muted)
             } else {
                 ForEach(entries) { entry in
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(theme.green).font(.caption)
-                        VStack(alignment: .leading, spacing: 2) {
-                            if let start = entry.dateStarted, let end = entry.dateFinished {
-                                Text("\(start) → \(end)").font(.caption.bold()).foregroundStyle(theme.text)
-                            } else if let end = entry.dateFinished {
-                                Text("Finished \(end)").font(.caption.bold()).foregroundStyle(theme.text)
-                            } else if let start = entry.dateStarted {
-                                Text("Started \(start)").font(.caption).foregroundStyle(theme.muted)
-                            } else if let yr = entry.yearRead {
-                                Text("Read in \(yr)").font(.caption).foregroundStyle(theme.muted)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(theme.green).font(.caption)
+                            VStack(alignment: .leading, spacing: 2) {
+                                if let start = entry.dateStarted, let end = entry.dateFinished {
+                                    Text("\(start) \u{2192} \(end)").font(.caption.bold()).foregroundStyle(theme.text)
+                                } else if let end = entry.dateFinished {
+                                    Text("Finished \(end)").font(.caption.bold()).foregroundStyle(theme.text)
+                                } else if let start = entry.dateStarted {
+                                    Text("Started \(start)").font(.caption).foregroundStyle(theme.muted)
+                                } else if let yr = entry.yearRead {
+                                    Text("Read in \(yr)").font(.caption).foregroundStyle(theme.muted)
+                                }
+                                if let r = entry.rating {
+                                    Text(String(repeating: "\u{2605}", count: r))
+                                        .font(.caption2).foregroundStyle(theme.accent)
+                                }
                             }
-                            if let r = entry.rating {
-                                Text(String(repeating: "★", count: r))
-                                    .font(.caption2).foregroundStyle(theme.accent)
-                            }
+                            Spacer()
+                            Button { editingEntry = entry } label: {
+                                Image(systemName: "pencil").font(.caption).foregroundStyle(theme.muted)
+                            }.buttonStyle(.plain)
+                            Button { deleteTarget = entry } label: {
+                                Image(systemName: "trash").font(.caption).foregroundStyle(theme.red)
+                            }.buttonStyle(.plain)
                         }
-                        Spacer()
+                        if let review = entry.review, !review.isEmpty {
+                            Text(review)
+                                .font(.caption)
+                                .foregroundStyle(theme.muted)
+                                .padding(.leading, 24)
+                        }
                     }
                     .padding(.vertical, 4)
                     Divider()
@@ -472,6 +486,22 @@ struct ReadingHistorySection: View {
         .sheet(isPresented: $showAddSheet, onDismiss: { Task { await loadHistory() } }) {
             AddReadSheet(bookId: bookId)
         }
+        .sheet(item: $editingEntry, onDismiss: { Task { await loadHistory() } }) { entry in
+            AddReadSheet(bookId: bookId, existing: entry)
+        }
+        .confirmationDialog("Delete this read?", isPresented: Binding(
+            get: { deleteTarget != nil },
+            set: { if !$0 { deleteTarget = nil } }
+        ), titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                guard let e = deleteTarget else { return }
+                deleteTarget = nil
+                Task {
+                    _ = try? await ShelfAPIService.shared.deleteReadingLogEntry(id: e.id)
+                    await loadHistory()
+                }
+            }
+        }
     }
 
     private func loadHistory() async {
@@ -481,16 +511,27 @@ struct ReadingHistorySection: View {
     }
 }
 
-// MARK: - Add Read Sheet
+// MARK: - Add / Edit Read Sheet
 
 struct AddReadSheet: View {
     @Environment(ShelfTheme.self) var theme
     @Environment(\.dismiss) var dismiss
     let bookId: String
+    var existing: ReadingLogEntry? = nil
     @State private var startDate = ""
     @State private var endDate = ""
     @State private var rating: Int? = nil
+    @State private var review = ""
     @State private var isSaving = false
+
+    init(bookId: String, existing: ReadingLogEntry? = nil) {
+        self.bookId = bookId
+        self.existing = existing
+        _startDate = State(initialValue: existing?.dateStarted ?? "")
+        _endDate = State(initialValue: existing?.dateFinished ?? "")
+        _rating = State(initialValue: existing?.rating)
+        _review = State(initialValue: existing?.review ?? "")
+    }
 
     var body: some View {
         NavigationStack {
@@ -503,34 +544,54 @@ struct AddReadSheet: View {
                     Picker("Rating", selection: $rating) {
                         Text("No rating").tag(Optional<Int>.none)
                         ForEach(1...5, id: \.self) { n in
-                            Text(String(repeating: "★", count: n)).tag(Optional(n))
+                            Text(String(repeating: "\u{2605}", count: n)).tag(Optional(n))
                         }
                     }
                 }
+                Section("Review") {
+                    ZStack(alignment: .topLeading) {
+                        if review.isEmpty {
+                            Text("Write a review for this read\u{2026}")
+                                .foregroundStyle(Color.secondary.opacity(0.6))
+                                .padding(.top, 8)
+                        }
+                        TextEditor(text: $review).frame(minHeight: 80)
+                    }
+                }
             }
-            .navigationTitle("Log a Read")
+            .navigationTitle(existing == nil ? "Log a Read" : "Edit Read")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(isSaving || (startDate.isEmpty && endDate.isEmpty))
-                        .foregroundStyle(theme.accent)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
     }
 
     private func save() {
         isSaving = true
         Task {
-            _ = try? await ShelfAPIService.shared.addReadingLogEntry(
-                bookId: bookId,
-                dateStarted: startDate.isEmpty ? nil : startDate,
-                dateFinished: endDate.isEmpty ? nil : endDate,
-                rating: rating
-            )
+            if let e = existing {
+                _ = try? await ShelfAPIService.shared.updateReadingLogEntry(
+                    id: e.id,
+                    dateStarted: startDate.isEmpty ? nil : startDate,
+                    dateFinished: endDate.isEmpty ? nil : endDate,
+                    rating: rating,
+                    review: review.isEmpty ? nil : review
+                )
+            } else {
+                _ = try? await ShelfAPIService.shared.addReadingLogEntry(
+                    bookId: bookId,
+                    dateStarted: startDate.isEmpty ? nil : startDate,
+                    dateFinished: endDate.isEmpty ? nil : endDate,
+                    rating: rating,
+                    review: review.isEmpty ? nil : review
+                )
+            }
             dismiss()
         }
     }

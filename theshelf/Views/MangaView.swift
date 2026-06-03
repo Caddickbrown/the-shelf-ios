@@ -197,27 +197,35 @@ struct MangaView: View {
             if aO != bO { return aO < bO }
             return $0.title < $1.title
         }
-        return ScrollView {
-            LazyVStack(spacing: 0) {
-                if sorted.isEmpty {
-                    HStack {
-                        Spacer()
-                        Text(searchText.isEmpty ? "No manga found" : "No results for '\(searchText)'")
-                            .font(.callout).foregroundStyle(theme.muted).padding(.top, 60)
-                        Spacer()
-                    }
-                } else {
-                    ForEach(sorted) { book in
-                        NavigationLink(destination: BookDetailView(book: book)) {
-                            BookRow(book: book).padding(.horizontal)
+        return List {
+            if sorted.isEmpty {
+                Text(searchText.isEmpty ? "No manga found" : "No results for '\(searchText)'")
+                    .font(.callout).foregroundStyle(theme.muted)
+                    .listRowBackground(theme.bg)
+            } else {
+                ForEach(sorted) { book in
+                    NavigationLink(destination: BookDetailView(book: book)) {
+                        HStack(spacing: 8) {
+                            if let order = book.readingOrder {
+                                Text("#\(order)")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(theme.muted)
+                                    .frame(width: 28, alignment: .trailing)
+                            }
+                            BookRow(book: book)
                         }
-                        .buttonStyle(.plain)
-                        Divider().padding(.leading, 72)
                     }
+                    .listRowBackground(theme.bg)
+                }
+                .onMove { from, to in
+                    Task { await reorder(sorted: sorted, from: from, to: to) }
                 }
             }
-            .padding(.vertical, 12)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(theme.bg)
+        .environment(\.editMode, .constant(.active))
         .refreshable { await load() }
     }
 
@@ -260,6 +268,22 @@ struct MangaView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func reorder(sorted: [Book], from: IndexSet, to: Int) async {
+        var items = sorted
+        items.move(fromOffsets: from, toOffset: to)
+        // Re-assign reading_order based on new positions
+        for (idx, book) in items.enumerated() {
+            let newOrder = idx + 1
+            guard book.readingOrder != newOrder else { continue }
+            _ = try? await ShelfAPIService.shared.updateBook(
+                id: book.id,
+                changes: ["reading_order": newOrder]
+            )
+        }
+        // Reload from server
+        await load()
     }
 }
 

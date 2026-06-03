@@ -354,5 +354,6 @@ private struct ThemeRow: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
     }
 }

@@ -333,7 +333,7 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .confirmationDialog("Clear all cached covers?", isPresented: $showClearConfirm) {
-                Button("Clear Covers", role: .destructive) { cache.clearFullCovers() }
+                Button("Clear Covers", role: .destructive) { cache.clearAll() }
             }
         }
     }

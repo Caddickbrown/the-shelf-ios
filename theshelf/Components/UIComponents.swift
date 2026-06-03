@@ -654,7 +654,8 @@ struct ManualAddForm: View {
                         publisher: nil,
                         publishedDate: nil,
                         language: nil,
-                        updatedAt: ISO8601DateFormatter().string(from: Date())
+                        updatedAt: ISO8601DateFormatter().string(from: Date()),
+                        readingOrder: nil
                     )
                     onAdd(book)
                 }

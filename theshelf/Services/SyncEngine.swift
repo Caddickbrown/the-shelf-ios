@@ -70,7 +70,7 @@ final class SyncEngine {
                 }
                 let applied = try await api.pushMutations(payloads)
                 // Remove successfully applied mutations
-                mutationQueue.removeAll { m in applied.contains(m.id.uuidString) }
+                mutationQueue.removeAll { m in applied.contains(m.bookId) }
                 pendingCount = mutationQueue.count
                 persistQueue()
             }

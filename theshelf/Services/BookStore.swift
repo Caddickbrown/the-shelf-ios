@@ -188,6 +188,7 @@ final class BookStore {
             case "start_date":      book.startDate = value as? String
             case "end_date":        book.endDate = value as? String
             case "series":          book.series = value as? String
+            case "series_pos":      book.seriesPos = value as? String
             case "series_position": book.seriesPosition = value as? Double
             case "publisher":       book.publisher = value as? String
             case "published_date":  book.publishedDate = value as? String

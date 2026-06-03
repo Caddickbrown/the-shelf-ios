@@ -100,15 +100,34 @@ actor ShelfAPIService: NSObject {
     }
 
     /// Add a new reading log entry for a book.
-    func addReadingLogEntry(bookId: String, dateStarted: String?, dateFinished: String?, rating: Int?) async throws {
+    func addReadingLogEntry(bookId: String, dateStarted: String?, dateFinished: String?, rating: Int?, review: String?) async throws {
         struct Payload: Encodable {
             let date_started: String?
             let date_finished: String?
             let rating: Int?
+            let review: String?
         }
         struct Resp: Decodable { let id: Int }
         let _: Resp = try await post("/api/books/\(bookId)/reads",
-            body: Payload(date_started: dateStarted, date_finished: dateFinished, rating: rating))
+            body: Payload(date_started: dateStarted, date_finished: dateFinished, rating: rating, review: review))
+    }
+
+    /// Update an existing reading log entry.
+    func updateReadingLogEntry(id: Int, dateStarted: String?, dateFinished: String?, rating: Int?, review: String?) async throws {
+        struct Payload: Encodable {
+            let date_started: String?
+            let date_finished: String?
+            let rating: Int?
+            let review: String?
+        }
+        struct Resp: Decodable { let ok: Bool }
+        let _: Resp = try await put("/api/reading-log/\(id)",
+            body: try JSONEncoder().encode(Payload(date_started: dateStarted, date_finished: dateFinished, rating: rating, review: review)))
+    }
+
+    /// Delete a reading log entry.
+    func deleteReadingLogEntry(id: Int) async throws {
+        try await delete("/api/reading-log/\(id)")
     }
 
     // MARK: - Manga
