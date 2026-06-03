@@ -76,10 +76,10 @@ final class SyncEngine {
             }
 
             // Step 2: pull server changes
-            // First launch (no lastSync): paginated full fetch to get all 11k+ books
+            // First launch (no lastSync) OR local store is empty: paginated full fetch
             // Subsequent syncs: incremental pull only changed books
             let serverBooks: [Book]
-            if lastSyncTimestamp == nil {
+            if lastSyncTimestamp == nil || store.books.isEmpty {
                 serverBooks = try await api.fetchAllBooks()
             } else {
                 serverBooks = try await api.fetchBooksSince(lastSyncTimestamp!)
