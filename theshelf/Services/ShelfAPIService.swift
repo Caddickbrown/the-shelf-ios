@@ -159,6 +159,11 @@ actor ShelfAPIService: NSObject {
 
     // MARK: - Covers
 
+    /// Fetch raw data from a URL using the trusted session (handles self-signed certs).
+    func fetchData(from url: URL) async throws -> Data {
+        try await session.data(from: url).0
+    }
+
     /// Thumbnail — small, used in list views.
     func thumbnailURL(bookId: String) -> URL? {
         URL(string: "\(config.baseURL)/cover/\(bookId).jpg?thumb=1")

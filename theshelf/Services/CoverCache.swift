@@ -45,7 +45,7 @@ final class CoverCache {
         let path = thumbPath(bookId: bookId)
         if let cached = try? Data(contentsOf: path) { return cached }
         guard let url = await api.thumbnailURL(bookId: bookId) else { return nil }
-        guard let data = try? await URLSession.shared.data(from: url).0 else { return nil }
+        guard let data = try? await api.fetchData(from: url) else { return nil }
         try? data.write(to: path)
         return data
     }
@@ -61,7 +61,7 @@ final class CoverCache {
         }
         // Try to download
         guard let url = await api.coverURL(bookId: bookId),
-              let data = try? await URLSession.shared.data(from: url).0 else {
+              let data = try? await api.fetchData(from: url) else {
             // Offline fallback — return thumbnail
             return await thumbnail(bookId: bookId)
         }

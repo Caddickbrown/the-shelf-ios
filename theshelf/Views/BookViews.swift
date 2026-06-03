@@ -278,6 +278,7 @@ struct BookEditView: View {
         if let n = Double(seriesPosition) { changes["series_position"] = n }
 
         store.updateFields(book.id, changes: changes)
+        Task { await SyncEngine.shared.sync(store: store) }
         dismiss()
     }
 }

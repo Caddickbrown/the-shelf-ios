@@ -36,8 +36,13 @@ struct MangaView: View {
             if map[key] == nil { insertionOrder.append(key) }
             map[key, default: []].append(book)
         }
-        // Sort alphabetically by series name
-        let sortedKeys = insertionOrder.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        // Sort by reading_order first (web app order), then alphabetically
+        let sortedKeys = insertionOrder.sorted { a, b in
+            let aOrder = map[a]?.compactMap { $0.readingOrder }.min() ?? Int.max
+            let bOrder = map[b]?.compactMap { $0.readingOrder }.min() ?? Int.max
+            if aOrder != bOrder { return aOrder < bOrder }
+            return a.localizedCaseInsensitiveCompare(b) == .orderedAscending
+        }
         return sortedKeys.map { key in
             let books = (map[key] ?? []).sorted { a, b in
                 let aPos = a.seriesPosition ?? Double(a.seriesPos ?? "") ?? 9999
