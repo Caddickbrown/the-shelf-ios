@@ -134,8 +134,10 @@ struct BookDetailView: View {
         }
         .confirmationDialog("Delete this book?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
-                store.removeBook(id: book.id)
-                Task { _ = try? await ShelfAPIService.shared.deleteBook(id: book.id) }
+                let id = book.id
+                store.removeBook(id: id)
+                SyncEngine.shared.enqueueDelete(bookId: id)
+                Task { await SyncEngine.shared.sync(store: store) }
             }
         }
     }

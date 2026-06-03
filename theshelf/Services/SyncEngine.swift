@@ -25,7 +25,9 @@ final class SyncEngine {
     private let minSyncInterval: TimeInterval = 30
 
     private var mutationQueue: [PendingMutation] = []
+    private var deleteQueue: [String] = []   // book IDs pending deletion on server
     private let queueKey = "shelf.pendingMutations"
+    private let deleteQueueKey = "shelf.pendingDeletes"
     private let lastSyncKey = "shelf.lastSync"
     private let api = ShelfAPIService.shared
 
@@ -37,7 +39,18 @@ final class SyncEngine {
         let coded = changes.compactMapValues { AnyCodable($0) }
         let mutation = PendingMutation(bookId: bookId, changes: coded)
         mutationQueue.append(mutation)
-        pendingCount = mutationQueue.count
+        pendingCount = mutationQueue.count + deleteQueue.count
+        persistQueue()
+    }
+
+    /// Queue a book deletion to sync when back online.
+    func enqueueDelete(bookId: String) {
+        // Drop any pending mutations for this book — no point pushing edits for something deleted
+        mutationQueue.removeAll { $0.bookId == bookId }
+        if !deleteQueue.contains(bookId) {
+            deleteQueue.append(bookId)
+        }
+        pendingCount = mutationQueue.count + deleteQueue.count
         persistQueue()
     }
 
@@ -59,6 +72,19 @@ final class SyncEngine {
         defer { isSyncing = false }
 
         do {
+            // Step 0: push pending deletes
+            var failedDeletes: [String] = []
+            for bookId in deleteQueue {
+                do {
+                    try await api.deleteBook(id: bookId)
+                } catch {
+                    failedDeletes.append(bookId)  // keep for retry if offline
+                }
+            }
+            deleteQueue = failedDeletes
+            pendingCount = mutationQueue.count + deleteQueue.count
+            persistQueue()
+
             // Step 1: push local mutations
             if !mutationQueue.isEmpty {
                 let payloads = mutationQueue.map { m in
@@ -127,12 +153,14 @@ final class SyncEngine {
         if let data = try? JSONEncoder().encode(mutationQueue) {
             UserDefaults.standard.set(data, forKey: queueKey)
         }
+        UserDefaults.standard.set(deleteQueue, forKey: deleteQueueKey)
     }
 
     private func loadQueue() {
         guard let data = UserDefaults.standard.data(forKey: queueKey),
               let queue = try? JSONDecoder().decode([PendingMutation].self, from: data) else { return }
         mutationQueue = queue
-        pendingCount = queue.count
+        deleteQueue = UserDefaults.standard.stringArray(forKey: deleteQueueKey) ?? []
+        pendingCount = mutationQueue.count + deleteQueue.count
     }
 }
