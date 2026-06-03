@@ -4,7 +4,7 @@ import Foundation
 // Kept separate from StatsView.swift so they are NOT @MainActor-isolated,
 // allowing ShelfAPIService (an actor) to decode them without Swift 6 warnings.
 
-struct StatsResponse: Decodable {
+struct StatsResponse: Decodable, Sendable {
     let total: Int
     let totalRead: Int
     let totalReading: Int
@@ -28,19 +28,19 @@ struct StatsResponse: Decodable {
     }
 }
 
-struct YearCount: Decodable, Identifiable {
+struct YearCount: Decodable, Identifiable, Sendable {
     let year: Int
     let count: Int
     var id: Int { year }
 }
 
-struct AuthorCount: Decodable, Identifiable {
+struct AuthorCount: Decodable, Identifiable, Sendable {
     let author: String
     let count: Int
     var id: String { author }
 }
 
-struct StatsExtendedResponse: Decodable {
+struct StatsExtendedResponse: Decodable, Sendable {
     let genres: [GenreCount]
     let monthly: [MonthCount]
     let unreadCount: Int
@@ -56,19 +56,19 @@ struct StatsExtendedResponse: Decodable {
     }
 }
 
-struct GenreCount: Decodable, Identifiable {
+struct GenreCount: Decodable, Identifiable, Sendable {
     let genre: String
     let count: Int
     var id: String { genre }
 }
 
-struct MonthCount: Decodable, Identifiable {
+struct MonthCount: Decodable, Identifiable, Sendable {
     let month: String
     let count: Int
     var id: String { month }
 }
 
-struct FormatCount: Decodable, Identifiable {
+struct FormatCount: Decodable, Identifiable, Sendable {
     let format: String
     let count: Int
     var id: String { format }
