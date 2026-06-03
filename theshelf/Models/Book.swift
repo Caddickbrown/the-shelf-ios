@@ -10,7 +10,7 @@ struct Book: Identifiable, Codable, Hashable {
     var status: ReadStatus
     var rating: Int?
     var genre: String?
-    var type: BookType
+    var type: BookType?
     var description: String?
     var isbn: String?
     var isbn13: String?
@@ -80,7 +80,7 @@ extension Book {
         status = try c.decode(ReadStatus.self, forKey: .status)
         rating = try c.decodeIfPresent(Int.self, forKey: .rating)
         genre = try c.decodeIfPresent(String.self, forKey: .genre)
-        type = try c.decode(BookType.self, forKey: .type)
+        type = try c.decodeIfPresent(BookType.self, forKey: .type)
         description = try c.decodeIfPresent(String.self, forKey: .description)
         isbn = try c.decodeIfPresent(String.self, forKey: .isbn)
         isbn13 = try c.decodeIfPresent(String.self, forKey: .isbn13)

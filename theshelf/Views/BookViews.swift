@@ -174,7 +174,7 @@ struct BookEditView: View {
         _seriesPosition = State(initialValue: book.seriesPosition.map { "\($0)" } ?? "")
         _publisher = State(initialValue: book.publisher ?? "")
         _publishedDate = State(initialValue: book.publishedDate ?? "")
-        _bookType = State(initialValue: book.type)
+        _bookType = State(initialValue: book.type ?? .book)
     }
 
     var body: some View {

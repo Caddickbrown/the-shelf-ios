@@ -228,7 +228,7 @@ struct MetadataGrid: View {
             if let p = book.publisher     { LabelValue(label: "Publisher", value: p) }
             if let d = book.publishedDate { LabelValue(label: "Published", value: d) }
             if let i = book.isbn13 ?? book.isbn { LabelValue(label: "ISBN", value: i) }
-            LabelValue(label: "Type", value: book.type.label)
+            LabelValue(label: "Type", value: book.type?.label ?? "Unknown")
         }
     }
 }
