@@ -26,6 +26,7 @@ final class SyncEngine {
 
     private var mutationQueue: [PendingMutation] = []
     private var deleteQueue: [String] = []   // book IDs pending deletion on server
+    private(set) var pendingCreateIds: Set<String> = []  // temp local IDs not yet confirmed by server
     private let queueKey = "shelf.pendingMutations"
     private let deleteQueueKey = "shelf.pendingDeletes"
     private let lastSyncKey = "shelf.lastSync"
@@ -41,6 +42,16 @@ final class SyncEngine {
         mutationQueue.append(mutation)
         pendingCount = mutationQueue.count + deleteQueue.count
         persistQueue()
+    }
+
+    /// Track a locally-added book (temp UUID) so deletion detection doesn't wipe it.
+    func enqueueCreate(tempId: String) {
+        pendingCreateIds.insert(tempId)
+    }
+
+    /// Call once the server has confirmed the create and the local book has been swapped.
+    func confirmCreate(tempId: String) {
+        pendingCreateIds.remove(tempId)
     }
 
     /// Queue a book deletion to sync when back online.
@@ -118,11 +129,16 @@ final class SyncEngine {
 
             // Step 3b: detect deletions — if we did an incremental sync, check if server
             // has fewer books than local (books were deleted). If so, do a full refresh.
+            // Exclude locally-added books not yet confirmed by server from the comparison.
             if lastSyncTimestamp != nil && !serverBooks.isEmpty {
                 let serverTotal = try await api.fetchTotalCount()
-                if serverTotal < store.books.count {
+                let localConfirmedCount = store.books.count - pendingCreateIds.count
+                if serverTotal < localConfirmedCount {
                     let allBooks = try await api.fetchAllBooks()
-                    store.replaceAll(allBooks)
+                    // Preserve any locally-added books not yet on server
+                    let serverIds = Set(allBooks.map { $0.id })
+                    let localOnly = store.books.filter { pendingCreateIds.contains($0.id) && !serverIds.contains($0.id) }
+                    store.replaceAll(allBooks + localOnly)
                 }
             }
 

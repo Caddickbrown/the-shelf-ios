@@ -628,8 +628,9 @@ struct ManualAddForm: View {
             }
             Section {
                 Button("Add to Library") {
+                    let tempId = UUID().uuidString
                     let book = Book(
-                        id: UUID().uuidString,
+                        id: tempId,
                         title: title,
                         author: author,
                         status: status,
@@ -657,6 +658,7 @@ struct ManualAddForm: View {
                         updatedAt: ISO8601DateFormatter().string(from: Date()),
                         readingOrder: nil
                     )
+                    SyncEngine.shared.enqueueCreate(tempId: tempId)
                     onAdd(book)
                 }
                 .foregroundStyle(theme.accent)

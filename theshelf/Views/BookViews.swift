@@ -389,7 +389,30 @@ struct AddBookView: View {
                 } else {
                     ManualAddForm(onAdd: { book in
                         store.addBook(book)
-                        Task { await sync.sync(store: store) }
+                        Task {
+                            do {
+                                let serverBook = try await ShelfAPIService.shared.createBook(BookCreateRequest(
+                                    title: book.title,
+                                    author: book.author,
+                                    status: book.status,
+                                    isbn: book.isbn,
+                                    isbn13: book.isbn13,
+                                    pageCount: book.pageCount,
+                                    genre: book.genre,
+                                    description: book.description,
+                                    coverUrl: book.coverUrl,
+                                    type: book.type ?? .book,
+                                    publishedDate: book.publishedDate,
+                                    publisher: book.publisher
+                                ))
+                                store.removeBook(id: book.id)
+                                store.addBook(serverBook)
+                                SyncEngine.shared.confirmCreate(tempId: book.id)
+                            } catch {
+                                // Offline — local copy preserved, deletion detection won't touch it
+                            }
+                            await sync.sync(store: store)
+                        }
                     })
                 }
             }
@@ -447,7 +470,9 @@ struct AddBookView: View {
             readingOrder: nil
         )
         // Add locally with a temp UUID so the UI responds immediately
+        let tempId = book.id
         store.addBook(book)
+        SyncEngine.shared.enqueueCreate(tempId: tempId)
         Task {
             do {
                 // Server generates its own slug-based ID — replace local book with server's version
@@ -466,10 +491,11 @@ struct AddBookView: View {
                     publisher: result.publisher
                 ))
                 // Swap the temp local book for the server's canonical version
-                store.removeBook(id: book.id)
+                store.removeBook(id: tempId)
                 store.addBook(serverBook)
+                SyncEngine.shared.confirmCreate(tempId: tempId)
             } catch {
-                // Server unreachable — keep local copy; it will sync when back online
+                // Server unreachable — keep local copy; deletion detection will preserve it
             }
             await sync.sync(store: store)
         }
