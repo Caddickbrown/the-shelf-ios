@@ -213,6 +213,13 @@ actor ShelfAPIService: NSObject {
         URL(string: "\(config.baseURL)/cover/\(bookId).jpg")
     }
 
+    /// Set a cover by remote URL (server downloads and caches it).
+    func setCoverURL(bookId: String, url: String) async throws {
+        struct Payload: Encodable { let url: String }
+        struct Resp: Decodable { let ok: Bool }
+        let _: Resp = try await post("/api/books/\(bookId)/cover", body: Payload(url: url))
+    }
+
     /// Upload a cover image (JPEG data).
     func uploadCover(bookId: String, jpegData: Data) async throws {
         struct Payload: Codable { let image: String; let filename: String }

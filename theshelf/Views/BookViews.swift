@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 // MARK: - Book Detail View
 // Full parity: status, dates, rating, review, progress, metadata editing, cover upload.
@@ -163,6 +164,9 @@ struct BookEditView: View {
     @State private var publishedDate: String
     @State private var bookType: BookType
     @State private var isSaving = false
+    @State private var coverURL = ""
+    @State private var coverPhotoItem: PhotosPickerItem? = nil
+    @State private var coverUploadStatus = ""
 
     init(book: Book) {
         self.book = book
@@ -231,6 +235,51 @@ struct BookEditView: View {
                 Section("Publication") {
                     TextField("Publisher", text: $publisher)
                     TextField("Published date", text: $publishedDate)
+                }
+
+                Section("Cover") {
+                    PhotosPicker(selection: $coverPhotoItem, matching: .images) {
+                        Label("Choose from Photos", systemImage: "photo")
+                    }
+                    .onChange(of: coverPhotoItem) { _, item in
+                        guard let item else { return }
+                        Task {
+                            coverUploadStatus = "Uploading…"
+                            if let data = try? await item.loadTransferable(type: Data.self) {
+                                do {
+                                    try await ShelfAPIService.shared.uploadCover(bookId: book.id, jpegData: data)
+                                    coverUploadStatus = "✓ Cover uploaded"
+                                } catch {
+                                    coverUploadStatus = "Upload failed: \(error.localizedDescription)"
+                                }
+                            }
+                        }
+                    }
+                    HStack {
+                        TextField("Or paste image URL…", text: $coverURL)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                        if !coverURL.isEmpty {
+                            Button("Use") {
+                                Task {
+                                    coverUploadStatus = "Saving URL…"
+                                    do {
+                                        try await ShelfAPIService.shared.setCoverURL(bookId: book.id, url: coverURL)
+                                        coverUploadStatus = "✓ Cover saved"
+                                        coverURL = ""
+                                    } catch {
+                                        coverUploadStatus = "Failed: \(error.localizedDescription)"
+                                    }
+                                }
+                            }
+                            .foregroundStyle(theme.accent)
+                        }
+                    }
+                    if !coverUploadStatus.isEmpty {
+                        Text(coverUploadStatus)
+                            .font(.caption)
+                            .foregroundStyle(coverUploadStatus.hasPrefix("✓") ? theme.green : theme.muted)
+                    }
                 }
 
                 Section("Notes") {

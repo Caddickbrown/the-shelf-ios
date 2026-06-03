@@ -117,6 +117,7 @@ struct LibraryView: View {
     @State private var sortBy: SortOption = .title
     @State private var searchText = ""
     @State private var isSearching = false
+    @State private var showAddBook = false
 
     enum SortOption: String, CaseIterable {
         case title = "Title"
@@ -182,13 +183,21 @@ struct LibraryView: View {
             .navigationTitle("Library (\(filtered.count))")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        withAnimation { isSearching.toggle() }
-                        if !isSearching { searchText = "" }
-                    } label: {
-                        Image(systemName: isSearching ? "xmark" : "magnifyingglass")
+                    HStack(spacing: 4) {
+                        Button {
+                            withAnimation { isSearching.toggle() }
+                            if !isSearching { searchText = "" }
+                        } label: {
+                            Image(systemName: isSearching ? "xmark" : "magnifyingglass")
+                        }
+                        Button { showAddBook = true } label: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
+            }
+            .sheet(isPresented: $showAddBook) {
+                AddBookView()
             }
         }
         .shelfBackground()
