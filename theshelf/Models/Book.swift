@@ -87,9 +87,9 @@ extension Book {
         isbn = try c.decodeIfPresent(String.self, forKey: .isbn)
         isbn13 = try c.decodeIfPresent(String.self, forKey: .isbn13)
         // series_pos is stored as TEXT in SQLite — try String first, then Double (for numeric-only values)
-        if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos), let s = s {
+        if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos) {
             seriesPos = s
-        } else if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos), let d = d {
+        } else if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos) {
             seriesPos = d.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(d))" : "\(d)"
         } else {
             seriesPos = nil
