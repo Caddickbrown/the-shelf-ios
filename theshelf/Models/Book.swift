@@ -158,3 +158,23 @@ enum BookType: String, Codable, CaseIterable {
         self = BookType(rawValue: raw) ?? .book
     }
 }
+
+// MARK: - ReadingLogEntry
+
+struct ReadingLogEntry: Identifiable, Decodable {
+    let id: Int
+    let bookId: String
+    let dateStarted: String?
+    let dateFinished: String?
+    let yearRead: Int?
+    let rating: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case bookId = "book_id"
+        case dateStarted = "date_started"
+        case dateFinished = "date_finished"
+        case yearRead = "year_read"
+        case rating
+    }
+}

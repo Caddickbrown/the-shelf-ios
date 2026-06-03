@@ -11,6 +11,7 @@ struct MangaView: View {
     @State private var errorMessage: String?
     @State private var selectedStatus: ReadStatus?
     @State private var searchText = ""
+    @State private var showListView: Bool = true
 
     // MARK: - Derived data
 
@@ -69,6 +70,13 @@ struct MangaView: View {
             }
             .navigationTitle("Manga (\(manga.count))")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showListView.toggle() } label: {
+                        Image(systemName: showListView ? "rectangle.grid.1x2" : "list.bullet")
+                    }
+                }
+            }
             .task { await load() }
         }
     }
@@ -176,8 +184,41 @@ struct MangaView: View {
             }
             Spacer()
         } else {
-            groupList
+            if showListView { flatList } else { groupList }
         }
+    }
+
+    // MARK: - Flat ordered list
+
+    private var flatList: some View {
+        let sorted = filtered.sorted {
+            let aO = $0.readingOrder ?? Int.max
+            let bO = $1.readingOrder ?? Int.max
+            if aO != bO { return aO < bO }
+            return $0.title < $1.title
+        }
+        return ScrollView {
+            LazyVStack(spacing: 0) {
+                if sorted.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text(searchText.isEmpty ? "No manga found" : "No results for '\(searchText)'")
+                            .font(.callout).foregroundStyle(theme.muted).padding(.top, 60)
+                        Spacer()
+                    }
+                } else {
+                    ForEach(sorted) { book in
+                        NavigationLink(destination: BookDetailView(book: book)) {
+                            BookRow(book: book).padding(.horizontal)
+                        }
+                        .buttonStyle(.plain)
+                        Divider().padding(.leading, 72)
+                    }
+                }
+            }
+            .padding(.vertical, 12)
+        }
+        .refreshable { await load() }
     }
 
     // MARK: - Series group list
@@ -213,6 +254,8 @@ struct MangaView: View {
         do {
             let result = try await ShelfAPIService.shared.fetchManga()
             manga = result
+        } catch is CancellationError {
+            // swallow — fired when refreshable re-triggers during an in-flight load
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -6,11 +6,44 @@ import SwiftUI
 struct HomeView: View {
     @Environment(BookStore.self) var store
     @Environment(SyncEngine.self) var sync
+    @State private var searchText = ""
+    @State private var isSearching = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+
+                    // Inline search
+                    if isSearching {
+                        VStack(spacing: 0) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass").foregroundStyle(Color.secondary).font(.subheadline)
+                                TextField("Search title or author…", text: $searchText)
+                                    .autocorrectionDisabled().textInputAutocapitalization(.never)
+                                if !searchText.isEmpty {
+                                    Button { searchText = "" } label: {
+                                        Image(systemName: "xmark.circle.fill").foregroundStyle(Color.secondary)
+                                    }.buttonStyle(.plain)
+                                }
+                            }
+                            .padding(10)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .padding(.horizontal)
+
+                            if !searchText.isEmpty {
+                                ForEach(store.books(matching: searchText).prefix(10), id: \.id) { book in
+                                    NavigationLink(destination: BookDetailView(book: book)) {
+                                        BookRow(book: book).padding(.horizontal)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Divider().padding(.leading, 72)
+                                }
+                            }
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
 
                     // Currently reading
                     if !store.currentlyReading.isEmpty {
@@ -52,9 +85,18 @@ struct HomeView: View {
                 .padding(.top)
             }
             .navigationTitle("The Shelf")
+            .animation(.easeInOut(duration: 0.2), value: isSearching)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    SyncButton()
+                    HStack(spacing: 4) {
+                        Button {
+                            withAnimation { isSearching.toggle() }
+                            if !isSearching { searchText = "" }
+                        } label: {
+                            Image(systemName: isSearching ? "xmark" : "magnifyingglass")
+                        }
+                        SyncButton()
+                    }
                 }
             }
             .refreshable {
@@ -73,6 +115,8 @@ struct LibraryView: View {
     @State private var selectedStatus: ReadStatus? = nil
     @State private var selectedType: BookType? = nil
     @State private var sortBy: SortOption = .title
+    @State private var searchText = ""
+    @State private var isSearching = false
 
     enum SortOption: String, CaseIterable {
         case title = "Title"
@@ -85,6 +129,10 @@ struct LibraryView: View {
         var result = store.books
         if let s = selectedStatus { result = result.filter { $0.status == s } }
         if let t = selectedType   { result = result.filter { $0.type == t } }
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            result = result.filter { $0.title.lowercased().contains(q) || $0.author.lowercased().contains(q) }
+        }
         switch sortBy {
         case .title:     result.sort { $0.title < $1.title }
         case .author:    result.sort { $0.author < $1.author }
@@ -100,6 +148,27 @@ struct LibraryView: View {
                 // Filter chips
                 FilterBar(selectedStatus: $selectedStatus, selectedType: $selectedType, sortBy: $sortBy)
 
+                // Search bar
+                if isSearching {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass").foregroundStyle(theme.muted).font(.subheadline)
+                        TextField("Search title or author…", text: $searchText)
+                            .foregroundStyle(theme.text).autocorrectionDisabled().textInputAutocapitalization(.never)
+                        if !searchText.isEmpty {
+                            Button { searchText = "" } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.muted)
+                            }.buttonStyle(.plain)
+                        }
+                    }
+                    .padding(10)
+                    .background(theme.surface2)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(theme.border, lineWidth: 1))
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 List(filtered) { book in
                     NavigationLink(destination: BookDetailView(book: book)) {
                         BookRow(book: book)
@@ -109,7 +178,18 @@ struct LibraryView: View {
                 .scrollContentBackground(.hidden)
                 .background(theme.bg)
             }
+            .animation(.easeInOut(duration: 0.2), value: isSearching)
             .navigationTitle("Library (\(filtered.count))")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        withAnimation { isSearching.toggle() }
+                        if !isSearching { searchText = "" }
+                    } label: {
+                        Image(systemName: isSearching ? "xmark" : "magnifyingglass")
+                    }
+                }
+            }
         }
         .shelfBackground()
     }

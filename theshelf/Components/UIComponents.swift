@@ -229,6 +229,13 @@ struct MetadataGrid: View {
             if let d = book.publishedDate { LabelValue(label: "Published", value: d) }
             if let i = book.isbn13 ?? book.isbn { LabelValue(label: "ISBN", value: i) }
             LabelValue(label: "Type", value: book.type?.label ?? "Unknown")
+            if let s = book.series {
+                let pos = book.seriesPos.map { " #\($0)" } ?? ""
+                LabelValue(label: "Series", value: s + pos)
+            }
+            if let order = book.readingOrder {
+                LabelValue(label: "Manga Order", value: "#\(order)")
+            }
         }
     }
 }
@@ -339,6 +346,40 @@ struct StatCell: View {
     }
 }
 
+// MARK: - OptionalDateRow
+/// Date picker row backed by an optional ISO date string ("YYYY-MM-DD").
+/// Shows a '+ Set' button when empty; shows DatePicker + clear button when set.
+struct OptionalDateRow: View {
+    let label: String
+    @Binding var text: String
+
+    private static let fmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+
+    private var date: Binding<Date> {
+        Binding(
+            get: { Self.fmt.date(from: text) ?? Date() },
+            set: { text = Self.fmt.string(from: $0) }
+        )
+    }
+
+    var body: some View {
+        HStack {
+            if text.isEmpty {
+                Button("+ Set \(label.lowercased())") { text = Self.fmt.string(from: Date()) }
+                    .font(.callout)
+            } else {
+                DatePicker(label, selection: date, displayedComponents: .date)
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
 // MARK: - StatusPickerSheet
 
 struct StatusPickerSheet: View {
@@ -379,8 +420,8 @@ struct StatusPickerSheet: View {
                     }
                 }
                 Section("Dates") {
-                    TextField("Start date (YYYY-MM-DD)", text: $startDate)
-                    TextField("End date (YYYY-MM-DD)", text: $endDate)
+                    OptionalDateRow(label: "Start date", text: $startDate)
+                    OptionalDateRow(label: "End date", text: $endDate)
                 }
             }
             .navigationTitle("Reading Status")

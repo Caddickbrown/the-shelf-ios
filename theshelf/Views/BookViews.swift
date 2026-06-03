@@ -83,6 +83,10 @@ struct BookDetailView: View {
                     .padding(.horizontal)
                 }
 
+                // Reading history
+                ReadingHistorySection(bookId: book.id)
+                    .padding(.horizontal)
+
                 // Review
                 if let review = current.review, !review.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
@@ -195,10 +199,8 @@ struct BookEditView: View {
                             Text(s.label).tag(s)
                         }
                     }
-                    TextField("Start date (YYYY-MM-DD)", text: $startDate)
-                        .keyboardType(.numbersAndPunctuation)
-                    TextField("End date (YYYY-MM-DD)", text: $endDate)
-                        .keyboardType(.numbersAndPunctuation)
+                    OptionalDateRow(label: "Start date", text: $startDate)
+                    OptionalDateRow(label: "End date", text: $endDate)
                     TextField("Current page", text: $currentPage)
                         .keyboardType(.numberPad)
                     TextField("Total pages", text: $pageCount)
@@ -293,6 +295,7 @@ struct AddBookView: View {
     @State private var searchResults: [MetadataResult] = []
     @State private var isSearching = false
     @State private var showManualAdd = false
+    @State private var showScanner = false
     @State private var error: String?
 
     enum AddMode: String, CaseIterable {
@@ -310,13 +313,31 @@ struct AddBookView: View {
                 .padding()
 
                 if mode == .isbn {
-                    ISBNSearchView(
-                        query: $isbnQuery,
-                        results: $searchResults,
-                        isSearching: $isSearching,
-                        error: $error,
-                        onSelect: addFromMetadata
-                    )
+                    VStack(spacing: 0) {
+                        // Camera scan button
+                        Button {
+                            showScanner = true
+                        } label: {
+                            Label("Scan Barcode", systemImage: "barcode.viewfinder")
+                                .font(.callout.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.accentColor.opacity(0.12))
+                                .foregroundStyle(Color.accentColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+
+                        ISBNSearchView(
+                            query: $isbnQuery,
+                            results: $searchResults,
+                            isSearching: $isSearching,
+                            error: $error,
+                            onSelect: addFromMetadata
+                        )
+                    }
                 } else {
                     ManualAddForm(onAdd: { book in
                         store.addBook(book)
@@ -325,6 +346,25 @@ struct AddBookView: View {
                 }
             }
             .navigationTitle("Add Book")
+            .fullScreenCover(isPresented: $showScanner) {
+                BarcodeScannerView { scanned in
+                    isbnQuery = scanned
+                    mode = .isbn
+                    // Auto-trigger search
+                    Task {
+                        isSearching = true
+                        error = nil
+                        do {
+                            searchResults = try await ShelfAPIService.shared.lookupISBN(scanned)
+                            if searchResults.isEmpty { error = "No results for barcode \(scanned)" }
+                        } catch {
+                            self.error = error.localizedDescription
+                        }
+                        isSearching = false
+                    }
+                }
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -374,6 +414,124 @@ struct AddBookView: View {
                 publisher: result.publisher
             ))
             await sync.sync(store: store)
+        }
+    }
+}
+
+// MARK: - Reading History Section
+
+struct ReadingHistorySection: View {
+    @Environment(ShelfTheme.self) var theme
+    let bookId: String
+    @State private var entries: [ReadingLogEntry] = []
+    @State private var isLoading = false
+    @State private var showAddSheet = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Reading History").font(.headline)
+                Spacer()
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus.circle").foregroundStyle(theme.accent)
+                }
+            }
+            if isLoading && entries.isEmpty {
+                ProgressView().tint(theme.accent)
+            } else if entries.isEmpty {
+                Text("No reading history yet")
+                    .font(.callout).foregroundStyle(theme.muted)
+            } else {
+                ForEach(entries) { entry in
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(theme.green).font(.caption)
+                        VStack(alignment: .leading, spacing: 2) {
+                            if let start = entry.dateStarted, let end = entry.dateFinished {
+                                Text("\(start) → \(end)").font(.caption.bold()).foregroundStyle(theme.text)
+                            } else if let end = entry.dateFinished {
+                                Text("Finished \(end)").font(.caption.bold()).foregroundStyle(theme.text)
+                            } else if let start = entry.dateStarted {
+                                Text("Started \(start)").font(.caption).foregroundStyle(theme.muted)
+                            } else if let yr = entry.yearRead {
+                                Text("Read in \(yr)").font(.caption).foregroundStyle(theme.muted)
+                            }
+                            if let r = entry.rating {
+                                Text(String(repeating: "★", count: r))
+                                    .font(.caption2).foregroundStyle(theme.accent)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                    Divider()
+                }
+            }
+        }
+        .task { await loadHistory() }
+        .sheet(isPresented: $showAddSheet, onDismiss: { Task { await loadHistory() } }) {
+            AddReadSheet(bookId: bookId)
+        }
+    }
+
+    private func loadHistory() async {
+        isLoading = true
+        entries = (try? await ShelfAPIService.shared.fetchReadingLog(bookId: bookId)) ?? []
+        isLoading = false
+    }
+}
+
+// MARK: - Add Read Sheet
+
+struct AddReadSheet: View {
+    @Environment(ShelfTheme.self) var theme
+    @Environment(\.dismiss) var dismiss
+    let bookId: String
+    @State private var startDate = ""
+    @State private var endDate = ""
+    @State private var rating: Int? = nil
+    @State private var isSaving = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Dates") {
+                    OptionalDateRow(label: "Start date", text: $startDate)
+                    OptionalDateRow(label: "End date", text: $endDate)
+                }
+                Section("Rating") {
+                    Picker("Rating", selection: $rating) {
+                        Text("No rating").tag(Optional<Int>.none)
+                        ForEach(1...5, id: \.self) { n in
+                            Text(String(repeating: "★", count: n)).tag(Optional(n))
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Log a Read")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(isSaving || (startDate.isEmpty && endDate.isEmpty))
+                        .foregroundStyle(theme.accent)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func save() {
+        isSaving = true
+        Task {
+            _ = try? await ShelfAPIService.shared.addReadingLogEntry(
+                bookId: bookId,
+                dateStarted: startDate.isEmpty ? nil : startDate,
+                dateFinished: endDate.isEmpty ? nil : endDate,
+                rating: rating
+            )
+            dismiss()
         }
     }
 }

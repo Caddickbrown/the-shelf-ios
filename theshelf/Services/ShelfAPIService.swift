@@ -92,6 +92,25 @@ actor ShelfAPIService: NSObject {
         try await delete("/api/books/\(id)")
     }
 
+    /// Fetch reading history for a book from /api/books/:id/reads
+    func fetchReadingLog(bookId: String) async throws -> [ReadingLogEntry] {
+        struct Envelope: Decodable { let reads: [ReadingLogEntry] }
+        let env: Envelope = try await get("/api/books/\(bookId)/reads")
+        return env.reads
+    }
+
+    /// Add a new reading log entry for a book.
+    func addReadingLogEntry(bookId: String, dateStarted: String?, dateFinished: String?, rating: Int?) async throws {
+        struct Payload: Encodable {
+            let date_started: String?
+            let date_finished: String?
+            let rating: Int?
+        }
+        struct Resp: Decodable { let id: Int }
+        let _: Resp = try await post("/api/books/\(bookId)/reads",
+            body: Payload(date_started: dateStarted, date_finished: dateFinished, rating: rating))
+    }
+
     // MARK: - Manga
 
     /// Fetch all manga from /api/manga. Items are mapped to the shared Book model.
@@ -152,7 +171,8 @@ actor ShelfAPIService: NSObject {
                 publisher: nil,
                 publishedDate: nil,
                 language: nil,
-                updatedAt: now
+                updatedAt: now,
+                readingOrder: item.readingOrder
             )
         }
     }
