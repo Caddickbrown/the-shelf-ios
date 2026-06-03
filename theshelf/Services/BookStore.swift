@@ -114,6 +114,12 @@ final class BookStore {
         persist()
     }
 
+    /// Replace entire local store with server books (used after detecting deletions).
+    func replaceAll(_ serverBooks: [Book]) {
+        books = serverBooks
+        persist()
+    }
+
     // MARK: - Server merge (called by SyncEngine)
 
     /// Merges server-updated books using last-write-wins per book.

@@ -89,6 +89,16 @@ final class SyncEngine {
             // Step 3: merge — server wins unless we have a newer local mutation for that field
             store.mergeFromServer(serverBooks, pendingMutations: mutationQueue)
 
+            // Step 3b: detect deletions — if we did an incremental sync, check if server
+            // has fewer books than local (books were deleted). If so, do a full refresh.
+            if lastSyncTimestamp != nil && !serverBooks.isEmpty {
+                let serverTotal = try await api.fetchTotalCount()
+                if serverTotal < store.books.count {
+                    let allBooks = try await api.fetchAllBooks()
+                    store.replaceAll(allBooks)
+                }
+            }
+
             // Update sync timestamp
             lastSyncDate = Date()
             lastSyncTimestamp = ISO8601DateFormatter().string(from: lastSyncDate!)

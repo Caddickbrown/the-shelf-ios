@@ -62,6 +62,13 @@ actor ShelfAPIService: NSObject {
         return all
     }
 
+    /// Fetch total book count from server (cheap — used to detect remote deletions).
+    func fetchTotalCount() async throws -> Int {
+        struct Envelope: Decodable { let total: Int }
+        let env: Envelope = try await get("/api/books?limit=1&offset=0")
+        return env.total
+    }
+
     /// Fetch books updated since a given ISO 8601 timestamp.
     func fetchBooksSince(_ timestamp: String) async throws -> [Book] {
         let encoded = timestamp.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? timestamp

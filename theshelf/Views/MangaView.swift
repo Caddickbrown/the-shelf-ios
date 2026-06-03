@@ -12,6 +12,7 @@ struct MangaView: View {
     @State private var selectedStatus: ReadStatus?
     @State private var searchText = ""
     @State private var showListView: Bool = true
+    @State private var isReordering = false
 
     // MARK: - Derived data
 
@@ -72,8 +73,15 @@ struct MangaView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showListView.toggle() } label: {
-                        Image(systemName: showListView ? "rectangle.grid.1x2" : "list.bullet")
+                    HStack(spacing: 4) {
+                        if showListView {
+                            Button { isReordering.toggle() } label: {
+                                Image(systemName: isReordering ? "checkmark" : "arrow.up.arrow.down")
+                            }
+                        }
+                        Button { showListView.toggle(); isReordering = false } label: {
+                            Image(systemName: showListView ? "rectangle.grid.1x2" : "list.bullet")
+                        }
                     }
                 }
             }
@@ -225,7 +233,7 @@ struct MangaView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(theme.bg)
-        .environment(\.editMode, .constant(.active))
+        .environment(\.editMode, .constant(isReordering ? .active : .inactive))
         .refreshable { await load() }
     }
 
