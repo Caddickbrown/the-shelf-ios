@@ -268,7 +268,7 @@ struct SettingsView: View {
                         Task {
                             testingConnection = true
                             connectionStatus = nil
-                            ShelfAPIService.shared.configure(ServerConfig(
+                            await ShelfAPIService.shared.configure(ServerConfig(
                                 baseURL: serverURL.trimmingCharacters(in: .whitespaces),
                                 ignoreTLSErrors: true,
                                 fallbackURL: fallbackURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil
@@ -397,7 +397,7 @@ struct OnboardingView: View {
                     Task {
                         testing = true
                         error = nil
-                        ShelfAPIService.shared.configure(ServerConfig(
+                        await ShelfAPIService.shared.configure(ServerConfig(
                             baseURL: serverURL.trimmingCharacters(in: .whitespaces),
                             ignoreTLSErrors: true,
                             fallbackURL: nil

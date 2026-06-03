@@ -19,22 +19,26 @@ struct TheShelfApp: App {
                 if !hasLaunched {
                     OnboardingView(serverURL: $serverURL) {
                         hasLaunched = true
-                        ShelfAPIService.shared.configure(ServerConfig(
-                            baseURL: serverURL,
-                            ignoreTLSErrors: true,
-                            fallbackURL: fallbackURL.isEmpty ? nil : fallbackURL
-                        ))
-                        Task { await store.loadFromServer() }
+                        Task {
+                            await ShelfAPIService.shared.configure(ServerConfig(
+                                baseURL: serverURL,
+                                ignoreTLSErrors: true,
+                                fallbackURL: fallbackURL.isEmpty ? nil : fallbackURL
+                            ))
+                            await store.loadFromServer()
+                        }
                     }
                 } else {
                     ContentView()
                         .onAppear {
                             shelfTheme.load()
-                            ShelfAPIService.shared.configure(ServerConfig(
-                                baseURL: serverURL,
-                                ignoreTLSErrors: true,
-                                fallbackURL: fallbackURL.isEmpty ? nil : fallbackURL
-                            ))
+                            Task {
+                                await ShelfAPIService.shared.configure(ServerConfig(
+                                    baseURL: serverURL,
+                                    ignoreTLSErrors: true,
+                                    fallbackURL: fallbackURL.isEmpty ? nil : fallbackURL
+                                ))
+                            }
                         }
                 }
             }
