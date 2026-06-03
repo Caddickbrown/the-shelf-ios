@@ -328,7 +328,7 @@ struct StatCell: View {
     @Environment(ShelfTheme.self) var theme
     let value: String
     let label: String
-    var color: Color = theme.text
+    var color: Color = .primary
     var body: some View {
         VStack(spacing: 2) {
             Text(value).font(.title3.bold()).foregroundStyle(color)
