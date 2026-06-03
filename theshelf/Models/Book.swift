@@ -30,6 +30,7 @@ struct Book: Identifiable, Codable, Hashable {
     var publishedDate: String?
     var language: String?
     var updatedAt: String
+    var readingOrder: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, title, author, status, rating, genre, description
@@ -51,6 +52,7 @@ struct Book: Identifiable, Codable, Hashable {
         case publishedDate = "published_date"
         case language
         case updatedAt = "updated_at"
+        case readingOrder = "reading_order"
     }
 
     var progress: Double? {
