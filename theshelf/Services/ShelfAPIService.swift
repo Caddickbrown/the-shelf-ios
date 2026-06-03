@@ -107,7 +107,7 @@ actor ShelfAPIService: NSObject {
             let notes: String?
             let series: String?
             let seriesPos: Double?   // volume number (series_pos in JSON)
-            let olCoverId: String?
+            let olCoverId: Int?
             let readingOrder: Int?
 
             enum CodingKeys: String, CodingKey {

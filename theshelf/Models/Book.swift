@@ -17,7 +17,7 @@ struct Book: Identifiable, Codable, Hashable {
     var seriesPos: String?
     var review: String?
     var notes: String?
-    var olCoverId: String?
+    var olCoverId: Int?
     var coverUrl: String?
     var series: String?
     var yearRead: Int?
@@ -87,7 +87,7 @@ extension Book {
         seriesPos = try c.decodeIfPresent(String.self, forKey: .seriesPos)
         review = try c.decodeIfPresent(String.self, forKey: .review)
         notes = try c.decodeIfPresent(String.self, forKey: .notes)
-        olCoverId = try c.decodeIfPresent(String.self, forKey: .olCoverId)
+        olCoverId = try c.decodeIfPresent(Int.self, forKey: .olCoverId)
         coverUrl = try c.decodeIfPresent(String.self, forKey: .coverUrl)
         series = try c.decodeIfPresent(String.self, forKey: .series)
         yearRead = try c.decodeIfPresent(Int.self, forKey: .yearRead)
