@@ -84,14 +84,9 @@ extension Book {
         description = try c.decodeIfPresent(String.self, forKey: .description)
         isbn = try c.decodeIfPresent(String.self, forKey: .isbn)
         isbn13 = try c.decodeIfPresent(String.self, forKey: .isbn13)
-        // series_pos can be a string ("-") or a float (1.0) depending on the book
-        if let s = try? c.decodeIfPresent(String.self, forKey: .seriesPos) {
-            seriesPos = s
-        } else if let d = try? c.decodeIfPresent(Double.self, forKey: .seriesPos) {
-            seriesPos = d.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(d))" : "\(d)"
-        } else {
-            seriesPos = nil
-        }
+        seriesPos = try? c.decodeIfPresent(Double.self, forKey: .seriesPos).map {
+            $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : "\($0)"
+        } ?? nil
         review = try c.decodeIfPresent(String.self, forKey: .review)
         notes = try c.decodeIfPresent(String.self, forKey: .notes)
         olCoverId = try c.decodeIfPresent(Int.self, forKey: .olCoverId)
